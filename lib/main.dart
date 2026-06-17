@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'app.dart';
+import 'common/config.dart';
 import 'common/utils/logger.dart';
 
 void main() {
@@ -12,7 +13,7 @@ void main() {
       );
     };
 
-    runApp(const IMClientApp());
+    AppConfig.init(() async => runApp(const IMClientApp()));
   }, (error, stackTrace) {
     Logger.print(
       'Uncaught error: ${error.toString()}, ${stackTrace.toString()}',

@@ -16,6 +16,8 @@ class AppImages {
 
   /// 登录页顶部背景插图 (SVG)
   static const String loginBackground = 'assets/images/login_background.svg';
+  /// 注册页顶部背景插图 (SVG)
+  static const String registerBackground = 'assets/images/register.svg';
 
   // ---- Material Icon 图标 ----
 

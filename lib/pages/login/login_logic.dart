@@ -78,18 +78,15 @@ class LoginLogic extends GetxController {
       final mockUserID = 'user_${DateTime.now().millisecondsSinceEpoch}';
       final mockToken = 'token_${DateTime.now().millisecondsSinceEpoch}';
 
-      // Save credentials
+      // IM login
+      await imLogic.login(mockUserID, mockToken);
+
+      // 默认保存凭据供下次自动登录
       await Storage.putLoginCertificate(
         userID: mockUserID,
         token: mockToken,
       );
-      await Storage.setLoginAccount({
-        'email': email,
-        'loginType': 1, // email
-      });
-
-      // IM login
-      await imLogic.login(mockUserID, mockToken);
+      await Storage.setLoginAccount({'email': email});
 
       Logger.print('Login success — navigating to home');
       AppNavigator.startMain();

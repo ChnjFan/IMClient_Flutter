@@ -82,9 +82,6 @@ class IMController extends GetxController {
       await Future.delayed(const Duration(milliseconds: 300));
       imSdkStatus(IMSdkStatus.syncEnded);
 
-      // Persist credentials
-      await Storage.putLoginCertificate(userID: uid, token: tkn);
-
       Logger.print('IMController — login success');
       return true;
     } catch (e) {

@@ -34,6 +34,9 @@ class SplashLogic extends GetxController {
     final uid = await Storage.userID;
     final tkn = await Storage.token;
 
+      AppNavigator.startLogin();
+    return;
+
     if (uid != null && uid.isNotEmpty && tkn != null && tkn.isNotEmpty) {
       Logger.print('SplashLogic — found stored credentials, auto-login...');
       try {

@@ -4,6 +4,8 @@ import '../pages/home/home_binding.dart';
 import '../pages/home/home_view.dart';
 import '../pages/login/login_binding.dart';
 import '../pages/login/login_view.dart';
+import '../pages/register/register_binding.dart';
+import '../pages/register/register_view.dart';
 import '../pages/splash/splash_binding.dart';
 import '../pages/splash/splash_view.dart';
 
@@ -38,6 +40,11 @@ class AppPages {
       name: AppRoutes.login,
       page: () => LoginPage(),
       binding: LoginBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.register,
+      page: () => RegisterPage(),
+      binding: RegisterBinding(),
     ),
     _pageBuilder(
       name: AppRoutes.home,
