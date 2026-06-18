@@ -41,4 +41,9 @@ class AppNavigator {
   static void startForgetPassword() {
     Get.toNamed(AppRoutes.forgetPassword);
   }
+
+  /// Navigate to user detail page.
+  static void startUserDetail() {
+    Get.toNamed(AppRoutes.userDetail);
+  }
 }

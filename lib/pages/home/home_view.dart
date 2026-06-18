@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../common/res/images.dart';
 import '../../common/res/strings.dart';
 import '../../common/styles/colors.dart';
+import '../mine/mine_view.dart';
 import 'home_logic.dart';
 
 class HomePage extends StatelessWidget {
@@ -20,7 +21,7 @@ class HomePage extends StatelessWidget {
           children: [
             _buildPlaceholderTab(AppStrings.home, AppImages.homeTabSel),
             _buildPlaceholderTab(AppStrings.contacts, AppImages.contactsTabSel),
-            _buildPlaceholderTab(AppStrings.mine, AppImages.mineTabSel),
+            MinePage(),
           ],
         ),
       ),

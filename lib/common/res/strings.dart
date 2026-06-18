@@ -39,4 +39,10 @@ class AppStrings {
   static const String home = '消息';
   static const String contacts = '通讯录';
   static const String mine = '我的';
+
+  // Mine
+  static const String settings = '设置';
+  static const String about = '关于';
+  static const String logout = '退出登录';
+  static const String confirmLogout = '确定要退出登录吗？';
 }

@@ -66,9 +66,6 @@ class IMController extends GetxController {
   Future<void> _initSDK() async {
     imSdkStatus(IMSdkStatus.initializing);
 
-    // Simulate async init delay
-    await Future.delayed(const Duration(milliseconds: 500));
-
     _isInitialized = true;
     imSdkStatus(IMSdkStatus.connectionSucceeded);
     if (!initializedSubject.isClosed) initializedSubject.add(true);

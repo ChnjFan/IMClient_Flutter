@@ -2,9 +2,9 @@ import 'dart:async';
 import 'package:get/get.dart';
 import '../../common/models/login_certificate.dart';
 import '../../common/utils/logger.dart';
-import '../../common/utils/storage.dart';
 import '../../core/controller/im_controller.dart';
 import '../../routes/app_navigator.dart';
+import '../../common/db/database.dart';
 
 class SplashLogic extends GetxController {
   final IMController imLogic = Get.find<IMController>();
@@ -29,29 +29,28 @@ class SplashLogic extends GetxController {
   }
 
   Future<void> _checkLoginState() async {
-    // Add a small delay so the splash screen is visible
+    /// test 测试用延时，模拟加载过程
     await Future.delayed(const Duration(seconds: 2));
 
-    final uid = await Storage.userID;
-    final tkn = await Storage.token;
-    final account = await Storage.getLoginAccount();
+    final db = Get.find<AppDatabase>();
+    final credential = await db.credentialDao.getLatest();
 
-    if (uid != null && uid.isNotEmpty && tkn != null && tkn.isNotEmpty &&
-        account != null) {
-      Logger.print('SplashLogic — found stored credentials, auto-login...');
+    if (credential != null &&
+      credential.userId.isNotEmpty &&
+      credential.token.isNotEmpty) {
+      // 有凭证，自动登录
       try {
         final cert = LoginCertificate(
-          userId: uid,
-          chatToken: tkn,
-          chatServerIp: account['host'] ?? '',
-          chatServerPort: account['port'] ?? '0',
+          userId: credential.userId,
+          chatToken: credential.token,
+          chatServerIp: credential.serverHost ?? '',
         );
+        Logger.print('SplashLogic — found stored credentials, auto-login...');
         await imLogic.login(cert);
-        Logger.print('SplashLogic — auto-login success');
         AppNavigator.startSplashToMain(isAutoLogin: true);
       } catch (e) {
+        await db.credentialDao.clear();
         Logger.print('SplashLogic — auto-login failed: $e');
-        await Storage.removeLoginCertificate();
         AppNavigator.startLogin();
       }
     } else {

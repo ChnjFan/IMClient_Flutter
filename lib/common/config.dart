@@ -2,12 +2,14 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'utils/logger.dart';
 import 'utils/storage.dart';
 import 'utils/http_utils.dart';
+import 'db/database.dart';
 
 /// 全局应用配置类。
 ///
@@ -17,6 +19,8 @@ import 'utils/http_utils.dart';
 /// - 服务端地址配置（预留 IM SDK 接入）
 class AppConfig {
   AppConfig._();
+
+  final appDatabase = AppDatabase();
 
   // ============================================================
   // 初始化
@@ -37,6 +41,10 @@ class AppConfig {
 
     // 初始化本地存储
     await Storage.init();
+    // 初始化本地数据库
+    final db = AppDatabase();
+    // 将数据库实例放入 GetX 依赖管理中，设置为永久实例
+    Get.put<AppDatabase>(db, permanent: true);
     // 初始化 http 客户端
     HttpUtils.init();
 
