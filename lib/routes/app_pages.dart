@@ -6,6 +6,8 @@ import '../pages/login/login_binding.dart';
 import '../pages/login/login_view.dart';
 import '../pages/register/register_binding.dart';
 import '../pages/register/register_view.dart';
+import '../pages/reset_passwd/reset_passwd_binding.dart';
+import '../pages/reset_passwd/reset_passwd_view.dart';
 import '../pages/splash/splash_binding.dart';
 import '../pages/splash/splash_view.dart';
 
@@ -45,6 +47,11 @@ class AppPages {
       name: AppRoutes.register,
       page: () => RegisterPage(),
       binding: RegisterBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.forgetPassword,
+      page: () => ResetPasswdPage(),
+      binding: ResetPasswdBinding(),
     ),
     _pageBuilder(
       name: AppRoutes.home,

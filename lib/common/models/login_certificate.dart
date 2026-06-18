@@ -4,39 +4,52 @@ import 'dart:convert';
 ///
 /// ```json
 /// {
-///   "userID": "123456",
-///   "imToken": "eyJ...",
-///   "chatToken": "eyJ..."
+///   "uid": 123456,
+///   "token": "eyJ...",
+///   "user": "ChnjFan",
+///   "email": "user@example.com",
+///   "host": "192.168.1.1",
+///   "port": "12345"
 /// }
 /// ```
 class LoginCertificate {
-  /// 用户 ID
-  String userID;
-
   /// Chat 服务 Token
   String chatToken;
   /// Chat 服务地址
-  String chatAddr;
+  String chatServerIp;
+  String chatServerPort;
+  // 用户信息
+  String userId;
+  String nickname;
+  String email;
+
 
   LoginCertificate({
-    this.userID = '',
+    this.userId = '-1',
     this.chatToken = '',
-    this.chatAddr = '',
+    this.chatServerIp = '',
+    this.chatServerPort = '0',
+    this.nickname = '',
+    this.email = '',
   });
 
   factory LoginCertificate.fromJson(Map<String, dynamic> map) {
     return LoginCertificate(
-      userID: map['userID'] ?? '',
-      chatToken: map['chatToken'] ?? '',
-      chatAddr: map['chatAddr'] ?? '',
+      userId: map['uid'] ?? '-1',
+      chatToken: map['token'] ?? '',
+      chatServerIp: map['host'] ?? '',
+      chatServerPort: map['port'] ?? '0',
+      nickname: map['user'] ?? '',
+      email: map['email'] ?? '',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'userID': userID,
-      'chatToken': chatToken,
-      'chatAddr': chatAddr,
+      'uid': userId,
+      'token': chatToken,
+      'host': chatServerIp,
+      'port': chatServerPort,
     };
   }
 

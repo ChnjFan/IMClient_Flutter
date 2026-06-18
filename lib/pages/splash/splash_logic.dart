@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:get/get.dart';
+import '../../common/models/login_certificate.dart';
 import '../../common/utils/logger.dart';
 import '../../common/utils/storage.dart';
 import '../../core/controller/im_controller.dart';
@@ -33,14 +34,19 @@ class SplashLogic extends GetxController {
 
     final uid = await Storage.userID;
     final tkn = await Storage.token;
+    final account = await Storage.getLoginAccount();
 
-      AppNavigator.startLogin();
-    return;
-
-    if (uid != null && uid.isNotEmpty && tkn != null && tkn.isNotEmpty) {
+    if (uid != null && uid.isNotEmpty && tkn != null && tkn.isNotEmpty &&
+        account != null) {
       Logger.print('SplashLogic — found stored credentials, auto-login...');
       try {
-        await imLogic.login(uid, tkn);
+        final cert = LoginCertificate(
+          userId: uid,
+          chatToken: tkn,
+          chatServerIp: account['host'] ?? '',
+          chatServerPort: account['port'] ?? '0',
+        );
+        await imLogic.login(cert);
         Logger.print('SplashLogic — auto-login success');
         AppNavigator.startSplashToMain(isAutoLogin: true);
       } catch (e) {

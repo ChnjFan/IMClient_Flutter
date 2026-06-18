@@ -3,8 +3,7 @@ import 'package:get/get.dart';
 import '../../common/apis.dart';
 import '../../common/utils/logger.dart';
 
-class RegisterLogic extends GetxController {
-  final nicknameCtrl = TextEditingController();
+class ResetPasswdLogic extends GetxController {
   final emailCtrl = TextEditingController();
   final codeCtrl = TextEditingController();
   final pwdCtrl = TextEditingController();
@@ -16,7 +15,6 @@ class RegisterLogic extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    nicknameCtrl.addListener(_onChanged);
     emailCtrl.addListener(_onChanged);
     codeCtrl.addListener(_onChanged);
     pwdCtrl.addListener(_onChanged);
@@ -25,7 +23,6 @@ class RegisterLogic extends GetxController {
 
   @override
   void onClose() {
-    nicknameCtrl.dispose();
     emailCtrl.dispose();
     codeCtrl.dispose();
     pwdCtrl.dispose();
@@ -34,8 +31,7 @@ class RegisterLogic extends GetxController {
   }
 
   void _onChanged() {
-    enabled.value = nicknameCtrl.text.trim().isNotEmpty &&
-        emailCtrl.text.trim().isNotEmpty &&
+    enabled.value = emailCtrl.text.trim().isNotEmpty &&
         codeCtrl.text.trim().isNotEmpty &&
         pwdCtrl.text.trim().isNotEmpty &&
         confirmPwdCtrl.text.trim().isNotEmpty;
@@ -48,7 +44,7 @@ class RegisterLogic extends GetxController {
       return false;
     }
     try {
-      await ApiService.sendVerificationCode(email: email, purpose: 1);
+      await ApiService.sendVerificationCode(email: email, purpose: 2);
       _showToast('验证码已发送');
       return true;
     } catch (e) {
@@ -57,7 +53,7 @@ class RegisterLogic extends GetxController {
     }
   }
 
-  Future<void> register() async {
+  Future<void> resetPassword() async {
     final email = emailCtrl.text.trim();
     final password = pwdCtrl.text.trim();
     final confirm = confirmPwdCtrl.text.trim();
@@ -76,23 +72,22 @@ class RegisterLogic extends GetxController {
     }
 
     try {
-      Logger.print('Register — email: $email');
+      Logger.print('Reset password — email: $email');
 
-      await ApiService.register(
-        nickname: nicknameCtrl.text.trim(),
+      await ApiService.resetPassword(
         email: email,
         code: codeCtrl.text.trim(),
         password: password,
       );
 
       Get.back();
-      _showToast('注册成功，请登录');
+      _showToast('密码重置成功，请登录');
     } catch (e) {
-      Logger.print('Register error: $e');
+      Logger.print('Reset password error: $e');
       if (e is (int, String)) {
         _showToast(e.$2);
       } else {
-        _showToast('注册失败，请重试');
+        _showToast('重置失败，请重试');
       }
     }
   }

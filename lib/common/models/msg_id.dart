@@ -33,4 +33,10 @@ class MsgId {
   static const int chatConvCreateRsp = 4002;
   static const int chatConvHistoryMsgReq = 4003;
   static const int chatConvHistoryMsgRsp = 4004;
+
+  // ---- 长链接消息 ----
+  static const int offline = 5001;
+  static const int heartbeatReq = 5002;
+  static const int heartbeatRsp = 5003;
+  static const int commonRsp = 5003;
 }

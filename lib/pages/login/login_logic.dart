@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../../common/apis.dart';
 import '../../common/utils/logger.dart';
 import '../../common/utils/storage.dart';
 import '../../core/controller/im_controller.dart';
@@ -72,27 +73,34 @@ class LoginLogic extends GetxController {
 
       Logger.print('Login — email: $email');
 
-      // Simulate API login
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final mockUserID = 'user_${DateTime.now().millisecondsSinceEpoch}';
-      final mockToken = 'token_${DateTime.now().millisecondsSinceEpoch}';
+      final cert = await ApiService.login(
+        email: email,
+        password: pwdCtrl.text.trim(),
+      );
 
       // IM login
-      await imLogic.login(mockUserID, mockToken);
+      await imLogic.login(cert);
 
       // 默认保存凭据供下次自动登录
       await Storage.putLoginCertificate(
-        userID: mockUserID,
-        token: mockToken,
+        userID: cert.userId,
+        token: cert.chatToken,
       );
-      await Storage.setLoginAccount({'email': email});
+      await Storage.setLoginAccount({
+        'email': email,
+        'host': cert.chatServerIp,
+        'port': cert.chatServerPort,
+      });
 
       Logger.print('Login success — navigating to home');
       AppNavigator.startMain();
     } catch (e) {
       Logger.print('Login error: $e');
-      _showToast('登录失败，请重试');
+      if (e is (int, String)) {
+        _showToast(e.$2);
+      } else {
+        _showToast('登录失败，请重试');
+      }
     }
   }
 

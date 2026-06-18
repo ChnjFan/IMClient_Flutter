@@ -6,12 +6,12 @@ import '../../common/res/strings.dart';
 import '../../common/widgets/button.dart';
 import '../../common/widgets/input_box.dart';
 import '../../common/widgets/touch_close_soft_keyboard.dart';
-import 'register_logic.dart';
+import 'reset_passwd_logic.dart';
 
-class RegisterPage extends StatelessWidget {
-  RegisterPage({super.key});
+class ResetPasswdPage extends StatelessWidget {
+  ResetPasswdPage({super.key});
 
-  final RegisterLogic logic = Get.find<RegisterLogic>();
+  final ResetPasswdLogic logic = Get.find<ResetPasswdLogic>();
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +22,7 @@ class RegisterPage extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 88),
-              // Register background illustration
+              // Background illustration
               SvgPicture.asset(
                 AppImages.registerBackground,
                 width: 280,
@@ -33,15 +33,6 @@ class RegisterPage extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Column(
                   children: [
-                    // Nickname
-                    InputBox.account(
-                      label: '',
-                      hintText: '请输入昵称',
-                      controller: logic.nicknameCtrl,
-                      focusNode: null,
-                      keyBoardType: TextInputType.text,
-                    ),
-                    const SizedBox(height: 16),
                     // Email
                     InputBox.account(
                       label: '',
@@ -81,11 +72,11 @@ class RegisterPage extends StatelessWidget {
                               logic.obscureText.value = !logic.obscureText.value,
                         )),
                     const SizedBox(height: 46),
-                    // Register button
+                    // Reset button
                     Obx(() => PrimaryButton(
-                          text: '注册',
+                          text: '重置密码',
                           enabled: logic.enabled.value,
-                          onTap: logic.register,
+                          onTap: logic.resetPassword,
                         )),
                   ],
                 ),
