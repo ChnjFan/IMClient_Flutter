@@ -55,6 +55,8 @@ class SplashLogic extends GetxController {
       }
     } else {
       Logger.print('SplashLogic — no stored credentials, go to login');
+      /// test 测试用，直接进入主页
+      // AppNavigator.startSplashToMain(isAutoLogin: true);
       AppNavigator.startLogin();
     }
   }

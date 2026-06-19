@@ -1,13 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
 import 'package:get/get.dart';
-import '../../common/models/login_certificate.dart';
-import '../../common/models/msg_id.dart';
-import '../../common/models/server_resp.dart';
-import '../../common/utils/logger.dart';
-import '../../common/utils/storage.dart';
-import '../../common/utils/tcp_utils.dart';
+import 'package:imclient_flutter/routes/app_navigator.dart';
+import 'package:imclient_flutter/common/models/login_certificate.dart';
+import 'package:imclient_flutter/common/models/msg_id.dart';
+import 'package:imclient_flutter/common/models/server_resp.dart';
+import 'package:imclient_flutter/common/utils/logger.dart';
+import 'package:imclient_flutter/common/utils/storage.dart';
+import 'package:imclient_flutter/common/utils/tcp_utils.dart';
+import 'chat_tcp_client.dart';
 
 enum IMSdkStatus {
   notInitialized,
@@ -42,14 +42,15 @@ class IMController extends GetxController {
     IMSdkStatusInfo(status: IMSdkStatus.notInitialized),
   );
 
-  // ---- User info ----
+  // ---- TCP 连接 ----
+  final ChatTcpClient _tcp = ChatTcpClient();
+
+  // ---- User info (reactive) ----
   final userID = ''.obs;
   final nickname = ''.obs;
   final email = ''.obs;
+  final avatarUrl = ''.obs;
   final token = ''.obs;
-
-  Completer<bool>? _loginCompleter;
-  LoginCertificate? _cert;
 
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
@@ -58,7 +59,8 @@ class IMController extends GetxController {
   void onInit() {
     super.onInit();
     Logger.print('IMController onInit — initializing SDK...');
-
+    _bindTcpCallbacks();
+    _registerHandlers();
     _initSDK();
   }
 
@@ -83,50 +85,24 @@ class IMController extends GetxController {
     token.value = cert.chatToken;
     nickname.value = cert.nickname;
     email.value = cert.email;
-
-    _cert = cert;
-
-    // 每次连接前重新绑定回调，防止被意外清空
-    tcpClient
-      ..onMessage = _onTcpMessage
-      ..onReconnected = _onReconnected
-      ..onStatusChanged = (status) {
-        Logger.print('TCP status: $status');
-        if (status == TcpStatus.disconnected) {
-          imSdkStatus(IMSdkStatus.connectionFailed);
-        }
-      }
-      ..onError = (e) {
-        Logger.print('TCP error: $e');
-      };
-
-    _registerHandlers();
-
+    avatarUrl.value = cert.avatarUrl;
 
     try {
       // 建立 TCP 长连接
-      final port = int.tryParse(cert.chatServerPort) ?? 0;
-      await tcpClient.connect(cert.chatServerIp, port);
+      await _tcp.connect(cert);
 
-      // 发送 chatLoginReq，等待应答
-      tcpClient.sendJson(MsgId.chatLoginReq, {
-        'uid': cert.userId,
-        'token': cert.chatToken,
-      });
-
-      _loginCompleter = Completer<bool>();
-      final ok = await _loginCompleter!.future.timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => false,
+      // 发送 chatLoginReq，等待 chatLoginRsp 应答
+      final resp = await _tcp.sendRequest(
+        MsgId.chatLoginReq,
+        MsgId.chatLoginRsp,
+        {'uid': cert.userId, 'token': cert.chatToken},
       );
-      _loginCompleter = null;
 
-      if (!ok) {
+      if (resp == null || !resp.isSuccess) {
         throw Exception('chat login failed');
       }
     } catch (e) {
-      tcpClient.disconnect();
-      _loginCompleter = null;
+      _tcp.disconnect();
       imSdkStatus(IMSdkStatus.connectionFailed);
       Logger.print('IMController — login failed: $e');
       rethrow;
@@ -137,46 +113,27 @@ class IMController extends GetxController {
     Logger.print('IMController — login success');
   }
 
-  /// msgId → 回调，外部可注册自定义处理。
-  final Map<int, void Function(ServerResp)> _handlers = {};
-
   /// 注册自定义消息处理器。
   void onMsg(int msgId, void Function(ServerResp) handler) {
-    _handlers[msgId] = handler;
+    _tcp.registerHandler(msgId, handler);
   }
 
-  void _onTcpMessage(int msgId, Uint8List data) {
-    ServerResp resp;
-    try {
-      final json = jsonDecode(utf8.decode(data)) as Map<String, dynamic>;
-      resp = ServerResp.fromJson(json);
-    } catch (_) {
-      resp = ServerResp(errCode: -1);
-    }
-
-    final handler = _handlers[msgId];
-    if (handler != null) {
-      handler(resp);
-    } else {
-      Logger.print('IMController — unhandled msgId=$msgId');
-    }
+  void _bindTcpCallbacks() {
+    _tcp.onStatusChanged = (status) {
+      Logger.print('TCP status: $status');
+      if (status == TcpStatus.disconnected) {
+        imSdkStatus(IMSdkStatus.connectionFailed);
+      }
+    };
   }
 
   void _registerHandlers() {
-    _handlers[MsgId.chatLoginRsp] = _onChatLoginRsp;
-    _handlers[MsgId.notifyAddFriend] = _onNotifyAddFriend;
-    _handlers[MsgId.notifyFriendAuth] = _onNotifyFriendAuth;
-    _handlers[MsgId.notifyChatMsg] = _onNotifyChatMsg;
-    _handlers[MsgId.heartbeatRsp] = _onHeartbeatRsp;
-  }
-
-  void _onReconnected() {
-    if (_cert == null) return;
-    Logger.print('IMController — reconnected, re-sending chatLoginReq');
-    tcpClient.sendJson(MsgId.chatLoginReq, {
-      'uid': _cert!.userId,
-      'token': _cert!.chatToken,
-    });
+    _tcp.registerHandler(MsgId.chatLoginRsp, _onChatLoginRsp);
+    _tcp.registerHandler(MsgId.notifyAddFriend, _onNotifyAddFriend);
+    _tcp.registerHandler(MsgId.notifyFriendAuth, _onNotifyFriendAuth);
+    _tcp.registerHandler(MsgId.notifyChatMsg, _onNotifyChatMsg);
+    _tcp.registerHandler(MsgId.heartbeatRsp, _onHeartbeatRsp);
+    _tcp.registerHandler(MsgId.offline, _onOffline);
   }
 
   void _onChatLoginRsp(ServerResp resp) {
@@ -186,7 +143,6 @@ class IMController extends GetxController {
       Logger.print('IMController — chat login failed: ${ServerError.getMsg(resp.errCode)}');
       imSdkStatus(IMSdkStatus.connectionFailed);
     }
-    _loginCompleter?.complete(resp.isSuccess);
   }
 
   void _onNotifyAddFriend(ServerResp resp) =>
@@ -200,15 +156,22 @@ class IMController extends GetxController {
 
   void _onHeartbeatRsp(ServerResp resp) =>
       Logger.print('IMController — heartbeat response received');
+  
+  void _onOffline(ServerResp resp) {
+      Logger.print('IMController — offline notification received');
+      logout();
+      AppNavigator.startLogin();
+  }
 
   /// 登出：断开 TCP 并清除状态。
   Future<void> logout() async {
     Logger.print('IMController — logging out');
-    tcpClient.disconnect();
+    _tcp.disconnect();
     userID.value = '';
     token.value = '';
     nickname.value = '';
     email.value = '';
+    avatarUrl.value = '';
     _isInitialized = false;
     imSdkStatus(IMSdkStatus.notInitialized);
     await Storage.removeLoginCertificate();

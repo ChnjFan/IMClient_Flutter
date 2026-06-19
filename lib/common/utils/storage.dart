@@ -10,6 +10,9 @@ class Storage {
 
   static const _keyUserID = 'user_id';
   static const _keyToken = 'im_token';
+  static const _keyEmail = 'email';
+  static const _keyAvatarUrl = 'avatar_url';
+  static const _keyNickname = 'nickname';
   static const _keyAreaCode = 'area_code';
   static const _keyPhoneNumber = 'phone_number';
   static const _keyLoginType = 'login_type';
@@ -34,6 +37,40 @@ class Storage {
   static Future<void> setUserID(String value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyUserID, value);
+  }
+
+  // ---- Nickname ----
+
+  static Future<String?> get nickname async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyNickname);
+  }
+
+  static Future<void> setNickname(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyNickname, value);
+  }
+
+  // ---- Email ----
+  static Future<String?> get email async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyEmail);
+  }
+
+  static Future<void> setEmail(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyEmail, value);
+  }
+
+  // ---- Avatar URL ----
+  static Future<String?> get avatarUrl async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyAvatarUrl);
+  }
+
+  static Future<void> setAvatarUrl(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyAvatarUrl, value);
   }
 
   // ---- Token ----

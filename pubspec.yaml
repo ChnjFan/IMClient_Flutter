@@ -36,7 +36,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   # 提供应用数据目录路径
-  path_provider: ^2.1.1
+  path_provider: ^2.1.4
   # 提供应用信息
   package_info_plus: ^10.1.0
   # 提供路由管理

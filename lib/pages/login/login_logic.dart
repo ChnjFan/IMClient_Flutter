@@ -86,10 +86,13 @@ class LoginLogic extends GetxController {
         userID: cert.userId,
         token: cert.chatToken,
       );
+      // 记录登录用户信息和服务器信息
       await Storage.setLoginAccount({
         'email': email,
+        'nickname': cert.nickname,
         'host': cert.chatServerIp,
         'port': cert.chatServerPort,
+        'avatar_url': cert.avatarUrl,
       });
 
       Logger.print('Login success — navigating to home');

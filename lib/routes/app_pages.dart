@@ -10,8 +10,6 @@ import '../pages/reset_passwd/reset_passwd_binding.dart';
 import '../pages/reset_passwd/reset_passwd_view.dart';
 import '../pages/splash/splash_binding.dart';
 import '../pages/splash/splash_view.dart';
-import '../pages/user_detail/user_detail_binding.dart';
-import '../pages/user_detail/user_detail_view.dart';
 
 part 'app_routes.dart';
 
@@ -59,11 +57,6 @@ class AppPages {
       name: AppRoutes.home,
       page: () => HomePage(),
       binding: HomeBinding(),
-    ),
-    _pageBuilder(
-      name: AppRoutes.userDetail,
-      page: () => UserDetailPage(),
-      binding: UserDetailBinding(),
     ),
   ];
 }
