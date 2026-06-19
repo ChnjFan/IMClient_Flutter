@@ -17,13 +17,15 @@ class UserInfo {
     this.ex,
   });
 
-  UserInfo.fromJson(Map<String, dynamic> json) {
-    userID = json['uid'];
-    name = json['name'];
-    remark = json['remark'];
-    email = json['email'];
-    avatarUrl = json['avatar'];
-    ex = json['ex'];
+  factory UserInfo.fromJson(Map<String, dynamic> json) {
+    return UserInfo(
+      userID: json['uid'],
+      name: json['name'],
+      remark: json['remark'],
+      email: json['email'],
+      avatarUrl: json['avatar_url'],
+      ex: json['ex'],
+    );
   }
 
   Map<String, dynamic> toJson() {

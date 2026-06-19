@@ -185,8 +185,11 @@ class TcpClient {
         ..setUint16(0, msgId, Endian.big)
         ..setUint16(2, data.length, Endian.big);
 
-      _socket!.add(header.buffer.asUint8List());
-      _socket!.add(data);
+      // header + data 合并为一次写入，避免 tcpNoDelay 下分成两个 TCP 包
+      final packet = Uint8List(4 + data.length);
+      packet.setRange(0, 4, header.buffer.asUint8List());
+      packet.setRange(4, packet.length, data);
+      _socket!.add(packet);
       _lastSendTime = DateTime.now();
       Logger.print('TCP send: msgId=$msgId len=${data.length}');
     } catch (e) {

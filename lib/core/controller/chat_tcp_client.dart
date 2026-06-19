@@ -135,6 +135,7 @@ class ChatTcpClient {
     // 2. 触发已注册的永久处理器（不影响请求/应答流程）
     final handler = _handlers[msgId];
     if (handler != null) {
+      Logger.print('ChatTcpClient — handle msgId=$msgId, errCode=${resp.errCode}');
       handler(resp);
     } else if (completer == null) {
       Logger.print('ChatTcpClient — unhandled msgId=$msgId');

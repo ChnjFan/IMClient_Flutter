@@ -78,6 +78,11 @@ class InputBox {
                   controller: controller,
                   focusNode: focusNode,
                   keyboardType: keyBoardType,
+                  contextMenuBuilder: (context, editableTextState) {
+                    return AdaptiveTextSelectionToolbar.editableText(
+                      editableTextState: editableTextState,
+                    );
+                  },
                   style: const TextStyle(
                     fontSize: 15,
                     color: AppColors.c_333333,
@@ -140,6 +145,11 @@ class InputBox {
                   controller: controller,
                   focusNode: focusNode,
                   obscureText: obscureText,
+                  contextMenuBuilder: (context, editableTextState) {
+                    return AdaptiveTextSelectionToolbar.editableText(
+                      editableTextState: editableTextState,
+                    );
+                  },
                   style: const TextStyle(
                     fontSize: 15,
                     color: AppColors.c_333333,
@@ -274,6 +284,11 @@ class _VerificationCodeInputState extends State<_VerificationCodeInput> {
                 child: TextField(
                   controller: widget.controller,
                   keyboardType: TextInputType.number,
+                  contextMenuBuilder: (context, editableTextState) {
+                    return AdaptiveTextSelectionToolbar.editableText(
+                      editableTextState: editableTextState,
+                    );
+                  },
                   style: const TextStyle(
                     fontSize: 15,
                     color: AppColors.c_333333,

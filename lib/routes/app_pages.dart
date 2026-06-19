@@ -8,6 +8,16 @@ import '../pages/register/register_binding.dart';
 import '../pages/register/register_view.dart';
 import '../pages/reset_passwd/reset_passwd_binding.dart';
 import '../pages/reset_passwd/reset_passwd_view.dart';
+import '../pages/mine/about/about_binding.dart';
+import '../pages/mine/about/about_view.dart';
+import '../pages/mine/detail/avatar_edit/avatar_edit_binding.dart';
+import '../pages/mine/detail/avatar_edit/avatar_edit_view.dart';
+import '../pages/mine/detail/email_edit/email_edit_binding.dart';
+import '../pages/mine/detail/email_edit/email_edit_view.dart';
+import '../pages/mine/detail/name_edit/name_edit_binding.dart';
+import '../pages/mine/detail/name_edit/name_edit_view.dart';
+import '../pages/mine/detail/user_detail_binding.dart';
+import '../pages/mine/detail/user_detail_view.dart';
 import '../pages/splash/splash_binding.dart';
 import '../pages/splash/splash_view.dart';
 
@@ -57,6 +67,32 @@ class AppPages {
       name: AppRoutes.home,
       page: () => HomePage(),
       binding: HomeBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.userDetail,
+      page: () => UserDetailPage(),
+      binding: UserDetailBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.nameEdit,
+      page: () => NameEditPage(),
+      binding: NameEditBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.emailEdit,
+      page: () => EmailEditPage(),
+      binding: EmailEditBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.avatarEdit,
+      page: () => AvatarEditPage(),
+      binding: AvatarEditBinding(),
+      popGesture: false,
+    ),
+    _pageBuilder(
+      name: AppRoutes.about,
+      page: () => AboutPage(),
+      binding: AboutBinding(),
     ),
   ];
 }

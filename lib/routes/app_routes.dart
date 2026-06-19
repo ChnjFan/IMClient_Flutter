@@ -9,4 +9,8 @@ abstract class AppRoutes {
   static const String register = '/register';
   static const String forgetPassword = '/forget_password';
   static const String userDetail = '/user_detail';
+  static const String nameEdit = '/user_detail/name_edit';
+  static const String emailEdit = '/user_detail/email_edit';
+  static const String avatarEdit = '/user_detail/avatar_edit';
+  static const String about = '/about';
 }

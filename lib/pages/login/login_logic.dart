@@ -86,13 +86,14 @@ class LoginLogic extends GetxController {
         userID: cert.userId,
         token: cert.chatToken,
       );
-      // 记录登录用户信息和服务器信息
+      // 记录登录用户信息和服务器信息（从 IMController Rx 读取，
+      // chatLoginRsp 可能已回填 HTTP 登录未返回的用户资料字段）
       await Storage.setLoginAccount({
-        'email': email,
-        'nickname': cert.nickname,
+        'email': imLogic.userInfo.value.email,
+        'nickname': imLogic.userInfo.value.name,
         'host': cert.chatServerIp,
         'port': cert.chatServerPort,
-        'avatar_url': cert.avatarUrl,
+        'avatar_url': imLogic.userInfo.value.avatarUrl,
       });
 
       Logger.print('Login success — navigating to home');

@@ -9,7 +9,7 @@ class MsgId {
   static const int chatLoginReq = 1005;
   static const int chatLoginRsp = 1006;
 
-  // ---- 用户搜索添加消息 ----
+  // ---- 好友搜索添加消息 ----
   static const int searchUserReq = 2001;
   static const int searchUserRsp = 2002;
   static const int addFriendReq = 2003;
@@ -18,6 +18,10 @@ class MsgId {
   static const int friendAuthReq = 2006;
   static const int friendAuthRsp = 2007;
   static const int notifyFriendAuth = 2008;
+
+  // ---- 用户资料更新消息 ----
+  static const int updateUserInfoReq = 2101;
+  static const int updateUserInfoRsp = 2102;
 
   // ---- 聊天消息 ----
   static const int chatMsgReq = 3001;
@@ -34,9 +38,9 @@ class MsgId {
   static const int chatConvHistoryMsgReq = 4003;
   static const int chatConvHistoryMsgRsp = 4004;
 
-  // ---- 长链接消息 ----
+  // ---- 系统消息 ----
   static const int offline = 5001;
   static const int heartbeatReq = 5002;
   static const int heartbeatRsp = 5003;
-  static const int commonRsp = 5003;
+  static const int commonRsp = 5004;
 }

@@ -21,18 +21,12 @@ class LoginCertificate {
   String chatServerPort;
   // 用户信息
   String userId;
-  String nickname;
-  String email;
-  String avatarUrl;
 
   LoginCertificate({
     this.userId = '-1',
     this.chatToken = '',
     this.chatServerIp = '',
     this.chatServerPort = '0',
-    this.nickname = '',
-    this.email = '',
-    this.avatarUrl = '',
   });
 
   factory LoginCertificate.fromJson(Map<String, dynamic> map) {
@@ -41,9 +35,6 @@ class LoginCertificate {
       chatToken: map['token'] ?? '',
       chatServerIp: map['host'] ?? '',
       chatServerPort: map['port'] ?? '0',
-      nickname: map['user'] ?? '',
-      email: map['email'] ?? '',
-      avatarUrl: map['avatar_url'] ?? '',
     );
   }
 

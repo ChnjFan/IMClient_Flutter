@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../core/controller/im_controller.dart';
 import 'utils/logger.dart';
 import 'utils/storage.dart';
 import 'utils/http_utils.dart';
@@ -45,6 +46,8 @@ class AppConfig {
     final db = AppDatabase();
     // 将数据库实例放入 GetX 依赖管理中，设置为永久实例
     Get.put<AppDatabase>(db, permanent: true);
+    // 将 IMController 注册为全局永久单例（避免 route scope 导致多实例）
+    Get.put<IMController>(IMController(), permanent: true);
     // 初始化 http 客户端
     HttpUtils.init();
 

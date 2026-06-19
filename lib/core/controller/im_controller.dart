@@ -4,6 +4,7 @@ import 'package:imclient_flutter/routes/app_navigator.dart';
 import 'package:imclient_flutter/common/models/login_certificate.dart';
 import 'package:imclient_flutter/common/models/msg_id.dart';
 import 'package:imclient_flutter/common/models/server_resp.dart';
+import 'package:imclient_flutter/common/models/user/user_info.dart';
 import 'package:imclient_flutter/common/utils/logger.dart';
 import 'package:imclient_flutter/common/utils/storage.dart';
 import 'package:imclient_flutter/common/utils/tcp_utils.dart';
@@ -46,11 +47,8 @@ class IMController extends GetxController {
   final ChatTcpClient _tcp = ChatTcpClient();
 
   // ---- User info (reactive) ----
-  final userID = ''.obs;
-  final nickname = ''.obs;
-  final email = ''.obs;
-  final avatarUrl = ''.obs;
-  final token = ''.obs;
+  /// 初始化为空 [UserInfo]，login() 成功后从 chatLoginRsp 更新其字段。
+  final userInfo = UserInfo().obs;
 
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
@@ -81,12 +79,6 @@ class IMController extends GetxController {
     Logger.print('IMController — logging in userID: ${cert.userId} server: ${cert.chatServerIp}:${cert.chatServerPort}');
     imSdkStatus(IMSdkStatus.connecting);
 
-    userID.value = cert.userId;
-    token.value = cert.chatToken;
-    nickname.value = cert.nickname;
-    email.value = cert.email;
-    avatarUrl.value = cert.avatarUrl;
-
     try {
       // 建立 TCP 长连接
       await _tcp.connect(cert);
@@ -101,6 +93,8 @@ class IMController extends GetxController {
       if (resp == null || !resp.isSuccess) {
         throw Exception('chat login failed');
       }
+      // 从聊天服务器登录应答中提取用户资料
+      userInfo.value = UserInfo.fromJson(resp.data);
     } catch (e) {
       _tcp.disconnect();
       imSdkStatus(IMSdkStatus.connectionFailed);
@@ -113,9 +107,34 @@ class IMController extends GetxController {
     Logger.print('IMController — login success');
   }
 
-  /// 注册自定义消息处理器。
-  void onMsg(int msgId, void Function(ServerResp) handler) {
-    _tcp.registerHandler(msgId, handler);
+  Future<bool> updateUserInfo({
+    required String uid,
+    String? name,
+    String? email,
+    String? avatarUrl
+  }) async {
+    final resp = await _tcp.sendRequest(
+      MsgId.updateUserInfoReq,
+      MsgId.updateUserInfoRsp,
+      {
+        'uid': uid,
+        'name': name,
+        'email': email,
+        'avatar_url': avatarUrl,
+      },
+    );
+
+    if (resp == null || !resp.isSuccess) {
+      Logger.print('IMController — updateUserInfo failed: ${resp?.errCode}');
+      return false;
+    }
+
+    final updated = userInfo.value;
+    if (name != null) updated.name = name;
+    if (email != null) updated.email = email;
+    if (avatarUrl != null) updated.avatarUrl = avatarUrl;
+    userInfo.refresh();
+    return true;
   }
 
   void _bindTcpCallbacks() {
@@ -167,11 +186,6 @@ class IMController extends GetxController {
   Future<void> logout() async {
     Logger.print('IMController — logging out');
     _tcp.disconnect();
-    userID.value = '';
-    token.value = '';
-    nickname.value = '';
-    email.value = '';
-    avatarUrl.value = '';
     _isInitialized = false;
     imSdkStatus(IMSdkStatus.notInitialized);
     await Storage.removeLoginCertificate();

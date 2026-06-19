@@ -46,4 +46,24 @@ class AppNavigator {
   static void startUserDetail() {
     Get.toNamed(AppRoutes.userDetail);
   }
+
+  /// Navigate to name edit page.
+  static Future<T?>? startNameEdit<T extends Object?>() {
+    return Get.toNamed(AppRoutes.nameEdit);
+  }
+
+  /// Navigate to email edit page.
+  static Future<T?>? startEmailEdit<T extends Object?>() {
+    return Get.toNamed(AppRoutes.emailEdit);
+  }
+
+  /// Navigate to avatar edit page.
+  static Future<T?>? startAvatarEdit<T extends Object?>() {
+    return Get.toNamed(AppRoutes.avatarEdit);
+  }
+
+  /// Navigate to about page.
+  static Future<T?>? startAbout<T extends Object?>() {
+    return Get.toNamed(AppRoutes.about);
+  }
 }

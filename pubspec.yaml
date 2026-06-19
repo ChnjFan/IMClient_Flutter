@@ -53,6 +53,12 @@ dependencies:
   drift: ^2.21.0
   sqlite3_flutter_libs: ^0.5.0
   path: ^1.9.0
+  # 图片选择（相机/相册）
+  image_picker: ^1.1.2
+  # 图片裁剪编辑
+  image_cropper: ^8.1.0
+  # 保存图片到相册
+  image_gallery_saver: ^2.0.3
 
 dev_dependencies:
   flutter_test:

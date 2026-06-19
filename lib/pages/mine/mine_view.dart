@@ -62,9 +62,7 @@ class MinePage extends StatelessWidget {
           _buildMenuItem(
             icon: Icons.info_outline,
             title: AppStrings.about,
-            onTap: () {
-              // TODO: 跳转关于页
-            },
+            onTap: () => AppNavigator.startAbout(),
           ),
         ],
       ),
