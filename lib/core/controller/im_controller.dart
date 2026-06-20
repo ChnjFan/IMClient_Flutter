@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:get/get.dart';
+import 'package:imclient_flutter/common/models/user/user_full_info.dart';
 import 'package:imclient_flutter/routes/app_navigator.dart';
 import 'package:imclient_flutter/common/models/login_certificate.dart';
 import 'package:imclient_flutter/common/models/msg_id.dart';
@@ -153,6 +154,29 @@ class IMController extends GetxController {
     }
 
     return UserInfo.fromJson(resp.data);
+  }
+
+  Future<UserFullInfo> getUserFullInfo({
+    required String uid,
+    required String from,
+    }) async {
+    if (uid.isEmpty || from.isEmpty) {
+      Logger.print('IMController — getUserFullInfo input: $uid');
+      return Future.error('get user full info failed');
+    }
+
+    final resp = await _tcp.sendRequest(
+      MsgId.getUserFullInfoReq,
+      MsgId.getUserFullInfoRsp,
+      {'uid': uid, 'from': from},
+    );
+
+    if (resp == null || !resp.isSuccess) {
+      Logger.print('IMController — getUserFullInfo failed: ${resp?.errCode}');
+      return Future.error('get user full info failed');
+    }
+
+    return UserFullInfo.fromJson(resp.data);
   }
 
   void _bindTcpCallbacks() {

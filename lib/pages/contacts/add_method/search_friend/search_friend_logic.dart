@@ -4,6 +4,7 @@ import 'package:imclient_flutter/common/models/user/user_info.dart';
 import 'package:imclient_flutter/common/utils/logger.dart';
 import 'package:imclient_flutter/common/utils/validators.dart';
 import 'package:imclient_flutter/core/controller/im_controller.dart';
+import 'package:imclient_flutter/routes/app_navigator.dart';
 
 class SearchFriendLogic extends GetxController {
   final TextEditingController searchController = TextEditingController();
@@ -15,7 +16,7 @@ class SearchFriendLogic extends GetxController {
   final searchResult = Rx<UserInfo?>(null);
 
   final IMController imLogic = Get.find<IMController>();
-
+  
   Future<void> onSearch() async {
     final text = searchController.text.trim();
     if (text.isEmpty) return;
@@ -44,6 +45,20 @@ class SearchFriendLogic extends GetxController {
       searchResult.value = null;
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// 点击搜索结果，查询用户详情并跳转。
+  Future<void> onTapResult(UserInfo userInfo) async {
+    try {
+      // 拉取完整用户资料
+      final fullInfo = await imLogic.getUserFullInfo(
+        uid: userInfo.userID ?? '',
+        from: imLogic.userInfo.value.userID ?? '',
+      );
+      AppNavigator.startUserProfilePanel(userInfo: fullInfo);
+    } catch (_) {
+      Get.snackbar('查询失败', '获取用户信息失败，请稍后重试');
     }
   }
 

@@ -15,4 +15,5 @@ abstract class AppRoutes {
   static const String about = '/about';
   static const String addMethod = '/contacts/add_method';
   static const String searchFriend = '/contacts/search_friend';
+  static const String userProfilePanel = '/contacts/user_profile_panel';
 }

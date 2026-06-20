@@ -22,6 +22,8 @@ import '../pages/contacts/add_method/add_method_binding.dart';
 import '../pages/contacts/add_method/add_method_view.dart';
 import '../pages/contacts/add_method/search_friend/search_friend_binding.dart';
 import '../pages/contacts/add_method/search_friend/search_friend_view.dart';
+import '../pages/contacts/user_profile_panel/user_profile_panel_binding.dart';
+import '../pages/contacts/user_profile_panel/user_profile_panel_view.dart';
 import '../pages/splash/splash_binding.dart';
 import '../pages/splash/splash_view.dart';
 
@@ -107,6 +109,11 @@ class AppPages {
       name: AppRoutes.searchFriend,
       page: () => SearchFriendPage(),
       binding: SearchFriendBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.userProfilePanel,
+      page: () => UserProfilePanelPage(),
+      binding: UserProfilePanelBinding(),
     ),
   ];
 }

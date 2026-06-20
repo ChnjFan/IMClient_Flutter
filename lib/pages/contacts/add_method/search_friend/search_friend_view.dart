@@ -127,9 +127,7 @@ class SearchFriendPage extends StatelessWidget {
                 nickname: result.getShowName(),
                 email: result.email ?? '',
                 avatarUrl: result.avatarUrl ?? '',
-                onTap: () {
-                  // TODO: 跳转到用户详情页
-                },
+                onTap: () => logic.onTapResult(result),
               ),
             ],
           ),

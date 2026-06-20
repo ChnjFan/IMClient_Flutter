@@ -76,4 +76,11 @@ class AppNavigator {
   static Future<T?>? startSearchFriend<T extends Object?>() {
     return Get.toNamed(AppRoutes.searchFriend);
   }
+
+  /// Navigate to user profile panel page.
+  static Future<T?>? startUserProfilePanel<T extends Object?>({
+    required dynamic userInfo,
+  }) {
+    return Get.toNamed(AppRoutes.userProfilePanel, arguments: userInfo);
+  }
 }
