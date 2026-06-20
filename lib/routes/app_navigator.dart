@@ -66,4 +66,14 @@ class AppNavigator {
   static Future<T?>? startAbout<T extends Object?>() {
     return Get.toNamed(AppRoutes.about);
   }
+
+  /// Navigate to add method page.
+  static Future<T?>? startAddMethod<T extends Object?>() {
+    return Get.toNamed(AppRoutes.addMethod);
+  }
+
+  /// Navigate to search friend page.
+  static Future<T?>? startSearchFriend<T extends Object?>() {
+    return Get.toNamed(AppRoutes.searchFriend);
+  }
 }

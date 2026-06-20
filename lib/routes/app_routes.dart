@@ -13,4 +13,6 @@ abstract class AppRoutes {
   static const String emailEdit = '/user_detail/email_edit';
   static const String avatarEdit = '/user_detail/avatar_edit';
   static const String about = '/about';
+  static const String addMethod = '/contacts/add_method';
+  static const String searchFriend = '/contacts/search_friend';
 }

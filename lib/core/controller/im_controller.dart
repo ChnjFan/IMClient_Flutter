@@ -137,6 +137,24 @@ class IMController extends GetxController {
     return true;
   }
 
+  Future<UserInfo> searchUserInfo({
+    String? email,
+    String? nickname,
+  }) async {
+    final resp = await _tcp.sendRequest(
+      MsgId.searchUserReq,
+      MsgId.searchUserRsp,
+      {'email': email, 'name': nickname},
+    );
+
+    if (resp == null || !resp.isSuccess) {
+      Logger.print('IMController — searchUserInfo failed: ${resp?.errCode}');
+      throw Exception('search user info failed');
+    }
+
+    return UserInfo.fromJson(resp.data);
+  }
+
   void _bindTcpCallbacks() {
     _tcp.onStatusChanged = (status) {
       Logger.print('TCP status: $status');

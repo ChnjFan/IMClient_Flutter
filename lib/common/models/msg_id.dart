@@ -19,9 +19,11 @@ class MsgId {
   static const int friendAuthRsp = 2007;
   static const int notifyFriendAuth = 2008;
 
-  // ---- 用户资料更新消息 ----
+  // ---- 用户资料消息 ----
   static const int updateUserInfoReq = 2101;
   static const int updateUserInfoRsp = 2102;
+  static const int getUserFullInfoReq = 2103;
+  static const int getUserFullInfoRsp = 2104;
 
   // ---- 聊天消息 ----
   static const int chatMsgReq = 3001;

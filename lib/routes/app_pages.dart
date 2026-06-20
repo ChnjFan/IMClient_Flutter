@@ -18,6 +18,10 @@ import '../pages/mine/detail/name_edit/name_edit_binding.dart';
 import '../pages/mine/detail/name_edit/name_edit_view.dart';
 import '../pages/mine/detail/user_detail_binding.dart';
 import '../pages/mine/detail/user_detail_view.dart';
+import '../pages/contacts/add_method/add_method_binding.dart';
+import '../pages/contacts/add_method/add_method_view.dart';
+import '../pages/contacts/add_method/search_friend/search_friend_binding.dart';
+import '../pages/contacts/add_method/search_friend/search_friend_view.dart';
 import '../pages/splash/splash_binding.dart';
 import '../pages/splash/splash_view.dart';
 
@@ -93,6 +97,16 @@ class AppPages {
       name: AppRoutes.about,
       page: () => AboutPage(),
       binding: AboutBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.addMethod,
+      page: () => AddMethodPage(),
+      binding: AddMethodBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.searchFriend,
+      page: () => SearchFriendPage(),
+      binding: SearchFriendBinding(),
     ),
   ];
 }

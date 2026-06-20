@@ -70,6 +70,7 @@ class ServerError {
   // ---- 用户相关 ----
   static const int errUserExists = 3001;
   static const int errUserEmailNotExists = 3002;
+  static const int errUserNotFound = 3003;
   // ---- 登录 ----
   static const int errLoginTokenInvalid = 4001;
   static const int errLoginUidInvalid = 4002;
@@ -89,6 +90,7 @@ class ServerError {
     // 账号
     '3001': '账号已注册',
     '3002': '邮箱未注册',
+    '3003': '用户不存在',
     // 登录
     '4001': 'Token 无效',
     '4002': 'UID 无效',
