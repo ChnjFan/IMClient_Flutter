@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../routes/app_navigator.dart';
 import '../../../common/models/user/user_full_info.dart';
 import '../../../common/styles/colors.dart';
 import '../../../common/styles/text_styles.dart';
@@ -179,9 +180,7 @@ class UserProfilePanelPage extends StatelessWidget {
     return _buildButton(
       icon: Icons.person_add_alt_outlined,
       text: '添加好友',
-      onPressed: () {
-        // TODO: 发送添加好友请求
-      },
+      onPressed: () => AppNavigator.startApplyFriend(userInfo: user),
       fullWidth: true,
     );
   }

@@ -9,12 +9,16 @@ class MsgId {
   static const int chatLoginReq = 1005;
   static const int chatLoginRsp = 1006;
 
+  // ---- 登录后信息获取 ----
+  static const int getFirstLoginInfoReq = 1101;
+  static const int getFirstLoginInfoRsp = 1102;
+
   // ---- 好友搜索添加消息 ----
   static const int searchUserReq = 2001;
   static const int searchUserRsp = 2002;
   static const int addFriendReq = 2003;
   static const int addFriendRsp = 2004;
-  static const int notifyAddFriend = 2005;
+  static const int notifyFriendApply = 2005;
   static const int friendAuthReq = 2006;
   static const int friendAuthRsp = 2007;
   static const int notifyFriendAuth = 2008;

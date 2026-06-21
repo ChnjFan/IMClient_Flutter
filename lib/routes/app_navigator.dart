@@ -83,4 +83,11 @@ class AppNavigator {
   }) {
     return Get.toNamed(AppRoutes.userProfilePanel, arguments: userInfo);
   }
+
+  /// Navigate to apply friend page.
+  static Future<T?>? startApplyFriend<T extends Object?>({
+    required dynamic userInfo,
+  }) {
+    return Get.toNamed(AppRoutes.applyFriend, arguments: userInfo);
+  }
 }

@@ -51,6 +51,9 @@ class IMController extends GetxController {
   /// 初始化为空 [UserInfo]，login() 成功后从 chatLoginRsp 更新其字段。
   final userInfo = UserInfo().obs;
 
+  /// 新的朋友申请未读计数，收到 notifyFriendApply 通知时自增。
+  final newFriendApplyCount = 0.obs;
+
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
 
@@ -96,6 +99,9 @@ class IMController extends GetxController {
       }
       // 从聊天服务器登录应答中提取用户资料
       userInfo.value = UserInfo.fromJson(resp.data);
+
+      // 登录成功后拉取首次登录信息（包含 newFriendApplyCount 等）
+      await _fetchFirstLoginInfo();
     } catch (e) {
       _tcp.disconnect();
       imSdkStatus(IMSdkStatus.connectionFailed);
@@ -106,6 +112,27 @@ class IMController extends GetxController {
     imSdkStatus(IMSdkStatus.syncStart);
     imSdkStatus(IMSdkStatus.syncEnded);
     Logger.print('IMController — login success');
+  }
+
+  /// 登录成功后拉取首次登录信息，初始化 newFriendApplyCount 等状态。
+  Future<void> _fetchFirstLoginInfo() async {
+    try {
+      final resp = await _tcp.sendRequest(
+        MsgId.getFirstLoginInfoReq,
+        MsgId.getFirstLoginInfoRsp,
+        {'uid': userInfo.value.userID},
+      );
+
+      if (resp != null && resp.isSuccess) {
+        final count = resp.get<int>('friend_apply_count') ?? 0;
+        newFriendApplyCount.value = count;
+        Logger.print('IMController — first login info fetched, newFriendApplyCount=$count');
+      } else {
+        Logger.print('IMController — getFirstLoginInfo failed: ${resp?.errCode}');
+      }
+    } catch (e) {
+      Logger.print('IMController — getFirstLoginInfo error: $e');
+    }
   }
 
   Future<bool> updateUserInfo({
@@ -156,6 +183,26 @@ class IMController extends GetxController {
     return UserInfo.fromJson(resp.data);
   }
 
+  /// 发送添加好友请求。
+  /// [uid] 目标用户 ID，[reason] 申请留言。
+  /// 返回 `true` 表示请求发送成功。
+  Future<bool> addFriend({
+    required String uid,
+    required String reason,
+  }) async {
+    final resp = await _tcp.sendRequest(
+      MsgId.addFriendReq,
+      MsgId.addFriendRsp,
+      {'uid': userInfo.value.userID, 'friend_id': uid, 'msg': reason},
+    );
+
+    if (resp == null || !resp.isSuccess) {
+      Logger.print('IMController — addFriend failed: ${resp?.errCode}');
+      return false;
+    }
+    return true;
+  }
+
   Future<UserFullInfo> getUserFullInfo({
     required String uid,
     required String from,
@@ -190,7 +237,7 @@ class IMController extends GetxController {
 
   void _registerHandlers() {
     _tcp.registerHandler(MsgId.chatLoginRsp, _onChatLoginRsp);
-    _tcp.registerHandler(MsgId.notifyAddFriend, _onNotifyAddFriend);
+    _tcp.registerHandler(MsgId.notifyFriendApply, _onNotifyAddFriend);
     _tcp.registerHandler(MsgId.notifyFriendAuth, _onNotifyFriendAuth);
     _tcp.registerHandler(MsgId.notifyChatMsg, _onNotifyChatMsg);
     _tcp.registerHandler(MsgId.heartbeatRsp, _onHeartbeatRsp);
@@ -206,8 +253,10 @@ class IMController extends GetxController {
     }
   }
 
-  void _onNotifyAddFriend(ServerResp resp) =>
-      Logger.print('IMController — friend request from: ${resp.get('fromUid')}');
+  void _onNotifyAddFriend(ServerResp resp) {
+    Logger.print('IMController — friend request from: ${resp.get('fromUid')}');
+    newFriendApplyCount.value++;
+  }
 
   void _onNotifyFriendAuth(ServerResp resp) =>
       Logger.print('IMController — friend auth result from: ${resp.get('fromUid')}');
