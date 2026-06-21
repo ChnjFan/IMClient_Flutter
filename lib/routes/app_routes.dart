@@ -17,4 +17,5 @@ abstract class AppRoutes {
   static const String searchFriend = '/contacts/search_friend';
   static const String userProfilePanel = '/contacts/user_profile_panel';
   static const String applyFriend = '/contacts/apply_friend';
+  static const String friendApplys = '/contacts/friend_applys';
 }

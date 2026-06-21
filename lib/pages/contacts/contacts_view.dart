@@ -103,7 +103,7 @@ class ContactsPage extends StatelessWidget {
             badgeCount: imController.newFriendApplyCount.value,
             onTap: () {
               imController.newFriendApplyCount.value = 0;
-              // TODO: 跳转到新的朋友页面
+              AppNavigator.startFriendApplys();
             },
           )),
           const Divider(

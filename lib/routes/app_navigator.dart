@@ -90,4 +90,9 @@ class AppNavigator {
   }) {
     return Get.toNamed(AppRoutes.applyFriend, arguments: userInfo);
   }
+
+  /// Navigate to friend applys (好友请求列表) page.
+  static Future<T?>? startFriendApplys<T extends Object?>() {
+    return Get.toNamed(AppRoutes.friendApplys);
+  }
 }

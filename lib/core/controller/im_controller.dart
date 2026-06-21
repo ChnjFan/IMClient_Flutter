@@ -203,6 +203,60 @@ class IMController extends GetxController {
     return true;
   }
 
+  /// 拉取好友申请列表（支持增量拉取）。
+  ///
+  /// [sinceId] 本地已存储的最大申请 id，服务端只返回 id > sinceId 的新记录。
+  /// 传 0 或 null 时拉取全量。
+  Future<List<Map<String, dynamic>>> fetchFriendApplys({int sinceId = 0}) async {
+    final resp = await _tcp.sendRequest(
+      MsgId.getFriendApplyReq,
+      MsgId.getFriendApplyRsp,
+      {'uid': userInfo.value.userID, 'since_id': sinceId},
+    );
+
+    if (resp == null || !resp.isSuccess) {
+      Logger.print('IMController — fetchFriendApplys failed: ${resp?.errCode}');
+      return [];
+    }
+
+    final list = resp.get<List<dynamic>>('list') ?? [];
+    return list.cast<Map<String, dynamic>>();
+  }
+
+  /// 同意好友申请。
+  /// [fromUid] 发起申请的用户 ID。
+  /// 返回 `true` 表示操作成功。
+  Future<bool> acceptFriend({required String fromUid}) async {
+    final resp = await _tcp.sendRequest(
+      MsgId.friendAuthReq,
+      MsgId.friendAuthRsp,
+      {'uid': userInfo.value.userID, 'from_uid': fromUid, 'result': 1},
+    );
+
+    if (resp == null || !resp.isSuccess) {
+      Logger.print('IMController — acceptFriend failed: ${resp?.errCode}');
+      return false;
+    }
+    return true;
+  }
+
+  /// 拒绝好友申请。
+  /// [fromUid] 发起申请的用户 ID。
+  /// 返回 `true` 表示操作成功。
+  Future<bool> rejectFriend({required String fromUid}) async {
+    final resp = await _tcp.sendRequest(
+      MsgId.friendAuthReq,
+      MsgId.friendAuthRsp,
+      {'uid': userInfo.value.userID, 'from_uid': fromUid, 'result': 0},
+    );
+
+    if (resp == null || !resp.isSuccess) {
+      Logger.print('IMController — rejectFriend failed: ${resp?.errCode}');
+      return false;
+    }
+    return true;
+  }
+
   Future<UserFullInfo> getUserFullInfo({
     required String uid,
     required String from,
