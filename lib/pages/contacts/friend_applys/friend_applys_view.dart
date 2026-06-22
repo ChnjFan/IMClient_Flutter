@@ -3,15 +3,16 @@ import 'package:get/get.dart';
 import '../../../common/db/daos/friend_request_dao.dart';
 import '../../../common/styles/colors.dart';
 import '../../../common/styles/text_styles.dart';
+import '../../../routes/app_navigator.dart';
 import 'friend_applys_logic.dart';
 
 class FriendApplysPage extends StatelessWidget {
-  FriendApplysPage({super.key});
-
-  final FriendApplysLogic logic = Get.find<FriendApplysLogic>();
+  const FriendApplysPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final FriendApplysLogic logic = Get.find<FriendApplysLogic>();
+
     return Scaffold(
       backgroundColor: AppColors.c_F0F2F6,
       appBar: AppBar(
@@ -31,20 +32,25 @@ class FriendApplysPage extends StatelessWidget {
           );
         }
 
-        if (logic.requests.isEmpty) {
-          return _buildEmpty();
-        }
-
-        return ListView.separated(
-          padding: const EdgeInsets.only(top: 16),
-          itemCount: logic.requests.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 12),
-          itemBuilder: (_, index) {
-            final item = logic.requests[index];
-            return _buildRequestItem(item);
-          },
-        );
+        return _buildList(logic.allRequests, logic);
       }),
+    );
+  }
+
+  Widget _buildList(
+      List<FriendRequestWithProfile> list, FriendApplysLogic logic) {
+    if (list.isEmpty) {
+      return _buildEmpty();
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.only(top: 16),
+      itemCount: list.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (_, index) {
+        final item = list[index];
+        return _buildRequestItem(item, logic);
+      },
     );
   }
 
@@ -68,143 +74,131 @@ class FriendApplysPage extends StatelessWidget {
     );
   }
 
-  Widget _buildRequestItem(FriendRequestWithProfile item) {
+  Widget _buildRequestItem(
+      FriendRequestWithProfile item, FriendApplysLogic logic) {
+    final isOutgoing = logic.isOutgoing(item);
     final profile = item.fromProfile;
-    final name = profile?.name ?? item.request.fromUid;
+    final uid = isOutgoing ? item.request.friendId : item.request.uid;
+    final name = profile?.name ?? uid;
     final avatarUrl = profile?.avatarUrl ?? '';
     final message = item.request.message ?? '';
-    final timeStr = _formatTime(item.request.createdAt);
+    final timeStr = _formatTime(item.request.createTime);
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppColors.c_FFFFFF,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          // ---- 用户信息行 ----
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-            child: Row(
-              children: [
-                // Avatar
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: avatarUrl.isNotEmpty
-                        ? Image.network(
-                            avatarUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => _buildAvatarPlaceholder(),
-                          )
-                        : _buildAvatarPlaceholder(),
-                  ),
+    return InkWell(
+      onTap: () => AppNavigator.startProcessApply(item: item),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: AppColors.c_FFFFFF,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Row(
+            children: [
+              // Avatar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: avatarUrl.isNotEmpty
+                      ? Image.network(
+                          avatarUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => _buildAvatarPlaceholder(),
+                        )
+                      : _buildAvatarPlaceholder(),
                 ),
-                const SizedBox(width: 12),
-                // Name & message
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              name,
-                              style: AppTextStyles.ts_0C1C33_14sp,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+              ),
+              const SizedBox(width: 12),
+              // Name & message
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            name,
+                            style: AppTextStyles.ts_0C1C33_14sp,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          Text(
-                            timeStr,
-                            style: AppTextStyles.ts_8E9AB0_12sp,
-                          ),
-                        ],
-                      ),
-                      if (message.isNotEmpty) ...[
-                        const SizedBox(height: 4),
+                        ),
+                        _buildGenderIcon(profile?.gender),
                         Text(
-                          message,
+                          timeStr,
                           style: AppTextStyles.ts_8E9AB0_12sp,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            message,
+                            style: AppTextStyles.ts_8E9AB0_12sp,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Text(
+                          isOutgoing
+                              ? _outgoingStatusText(item.request.status)
+                              : _incomingStatusText(item.request.status),
+                          style: AppTextStyles.ts_8E9AB0_12sp,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          // ---- 操作按钮 ----
-          if (item.request.status == 0)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  _buildActionButton(
-                    label: '拒绝',
-                    textColor: AppColors.c_666666,
-                    bgColor: AppColors.c_F0F2F6,
-                    onTap: () => logic.reject(item),
-                  ),
-                  const SizedBox(width: 12),
-                  _buildActionButton(
-                    label: '同意',
-                    textColor: AppColors.c_FFFFFF,
-                    bgColor: AppColors.c_0089FF,
-                    onTap: () => logic.accept(item),
-                  ),
-                ],
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    item.request.status == 1 ? '已同意' : '已拒绝',
-                    style: AppTextStyles.ts_8E9AB0_12sp,
-                  ),
-                ],
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildActionButton({
-    required String label,
-    required Color textColor,
-    required Color bgColor,
-    required VoidCallback onTap,
-  }) {
-    return SizedBox(
-      height: 32,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: bgColor,
-          foregroundColor: textColor,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        onPressed: onTap,
-        child: Text(
-          label,
-          style: const TextStyle(fontSize: 13),
-        ),
+  Widget _buildGenderIcon(int? gender) {
+    if (gender == null || gender <= 0) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, right: 8),
+      child: Icon(
+        gender == 1 ? Icons.male : Icons.female,
+        size: 16,
+        color: gender == 1 ? AppColors.c_0089FF : const Color(0xFFFF6B9D),
       ),
     );
+  }
+
+  String _incomingStatusText(int status) {
+    switch (status) {
+      case 0:
+        return '待通过';
+      case 1:
+        return '已同意';
+      case 2:
+        return '已拒绝';
+      default:
+        return '';
+    }
+  }
+
+  String _outgoingStatusText(int status) {
+    switch (status) {
+      case 0:
+        return '等待通过';
+      case 1:
+        return '已同意';
+      case 2:
+        return '已拒绝';
+      default:
+        return '';
+    }
   }
 
   Widget _buildAvatarPlaceholder() {

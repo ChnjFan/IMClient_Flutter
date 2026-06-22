@@ -1,3 +1,4 @@
+import 'package:imclient_flutter/component/toast.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/controller/im_controller.dart';
@@ -48,18 +49,18 @@ class EmailEditLogic extends GetxController {
   Future<void> save() async {
     final email = emailCtrl.text.trim();
     if (email.isEmpty) {
-      Get.snackbar('', '邮箱不能为空', snackPosition: SnackPosition.BOTTOM);
+      AppToast.show('邮箱不能为空');
       return;
     }
     if (!_isValidEmail(email)) {
-      Get.snackbar('', '请输入正确的邮箱格式', snackPosition: SnackPosition.BOTTOM);
+      AppToast.show('请输入正确的邮箱格式');
       return;
     }
 
-    String uid = imLogic.userInfo.value.userID ?? '';
+    String uid = imLogic.userInfo.value.uid ?? '';
     final success = await imLogic.updateUserInfo(uid: uid, email: email);
     if (!success) {
-      Get.snackbar('', '更新邮箱失败', snackPosition: SnackPosition.BOTTOM);
+      AppToast.error('更新邮箱失败');
       return;
     }
     Get.back(result: email);

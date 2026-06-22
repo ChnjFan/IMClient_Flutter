@@ -24,11 +24,10 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
-  /// 监听会话列表（置顶优先，按最后消息时间倒序）。
+  /// 监听会话列表（按最后消息时间倒序）。
   Stream<List<Conversation>> watchAll() =>
       (select(conversations)
         ..orderBy([
-          (u) => OrderingTerm(expression: u.isTop, mode: OrderingMode.desc),
           (u) =>
               OrderingTerm(expression: u.lastMsgTime, mode: OrderingMode.desc),
         ]))
@@ -45,12 +44,6 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
       (update(conversations)
             ..where((c) => c.conversationId.equals(conversationId)))
           .write(ConversationsCompanion(unreadCount: Value(count)));
-
-  /// 切换置顶。
-  Future<void> toggleTop(String conversationId, bool isTop) =>
-      (update(conversations)
-            ..where((c) => c.conversationId.equals(conversationId)))
-          .write(ConversationsCompanion(isTop: Value(isTop)));
 
   /// 删除会话。
   Future<void> deleteById(String conversationId) =>

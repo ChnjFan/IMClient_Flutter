@@ -34,9 +34,9 @@ class UserFullInfo extends UserInfo {
   String? updateTime;
 
   UserFullInfo({
-    super.userID,
+    super.uid,
     super.name,
-    super.remark,
+    super.alias,
     super.email,
     super.avatarUrl,
     super.ex,
@@ -56,9 +56,9 @@ class UserFullInfo extends UserInfo {
 
   factory UserFullInfo.fromJson(Map<String, dynamic> json) {
     return UserFullInfo(
-      userID: json['uid']?.toString(),
+      uid: json['uid']?.toString(),
       name: json['name'],
-      remark: json['remark'],
+      alias: json['alias'],
       email: json['email'],
       avatarUrl: json['avatar_url'],
       ex: json['ex'],

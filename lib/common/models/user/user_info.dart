@@ -1,17 +1,17 @@
 class UserInfo {
-  String? userID;
+  String? uid;
   String? name;
   /// 备注
-  String? remark;
+  String? alias;
   String? email;
   String? avatarUrl;
   String? ex;
 
 
   UserInfo({
-    this.userID,
+    this.uid,
     this.name,
-    this.remark,
+    this.alias,
     this.email,
     this.avatarUrl,
     this.ex,
@@ -19,9 +19,9 @@ class UserInfo {
 
   factory UserInfo.fromJson(Map<String, dynamic> json) {
     return UserInfo(
-      userID: json['uid'].toString(),
+      uid: json['uid'].toString(),
       name: json['name'],
-      remark: json['remark'],
+      alias: json['alias'],
       email: json['email'],
       avatarUrl: json['avatar_url'],
       ex: json['ex'],
@@ -30,9 +30,9 @@ class UserInfo {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
-    data['uid'] = userID;
+    data['uid'] = uid;
     data['name'] = name;
-    data['remark'] = remark;
+    data['alias'] = alias;
     data['email'] = email;
     data['avatar'] = avatarUrl;
     data['ex'] = ex;
@@ -40,7 +40,7 @@ class UserInfo {
   }
 
   /// 获取显示名称，优先级：备注 > 昵称 > 用户ID
-  String getShowName() => _isNull(remark) ?? _isNull(name) ?? _isNull(userID) ?? '';
+  String getShowName() => _isNull(alias) ?? _isNull(name) ?? _isNull(uid) ?? '';
   /// 判断字符串空，返回空值
   static String? _isNull(String? str) => str == null || str.isEmpty ? null : str;
 }

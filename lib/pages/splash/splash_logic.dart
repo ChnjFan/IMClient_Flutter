@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:get/get.dart';
 import '../../common/models/login_certificate.dart';
 import '../../common/utils/logger.dart';
-import '../../common/utils/storage.dart';
 import '../../core/controller/im_controller.dart';
 import '../../routes/app_navigator.dart';
 import '../../common/db/database.dart';
@@ -39,15 +38,13 @@ class SplashLogic extends GetxController {
     if (credential != null &&
       credential.userId.isNotEmpty &&
       credential.token.isNotEmpty) {
-      // 有凭证，自动登录
+      // 有凭证，自动登录（从 DB 恢复全部连接信息）
       try {
-        // 从 Storage 恢复用户资料（昵称、邮箱、头像）
-        final account = await Storage.getLoginAccount();
         final cert = LoginCertificate(
           userId: credential.userId,
           chatToken: credential.token,
           chatServerIp: credential.serverHost ?? '',
-          chatServerPort: account?['port'] as String? ?? '',
+          chatServerPort: credential.serverPort ?? '',
         );
         Logger.print('SplashLogic — found stored credentials, auto-login...');
         await imLogic.login(cert);

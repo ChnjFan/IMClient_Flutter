@@ -10,33 +10,54 @@ class FriendApplysLogic extends GetxController {
   late final FriendRequestDao _requestDao;
   final IMController imLogic = Get.find<IMController>();
 
-  final requests = <FriendRequestWithProfile>[].obs;
+  /// 合并后的全部好友申请（收到 + 发出），按 createTime 降序排列。
+  final allRequests = <FriendRequestWithProfile>[].obs;
   final isLoading = true.obs;
 
-  StreamSubscription<List<FriendRequestWithProfile>>? _subscription;
+  StreamSubscription<List<FriendRequestWithProfile>>? _incomingSub;
+  StreamSubscription<List<FriendRequestWithProfile>>? _outgoingSub;
+
+  List<FriendRequestWithProfile> _incoming = [];
+  List<FriendRequestWithProfile> _outgoing = [];
+  bool _incomingLoaded = false;
+  bool _outgoingLoaded = false;
 
   @override
   void onInit() {
     super.onInit();
     _requestDao = _db.friendRequestDao;
-    final userId = imLogic.userInfo.value.userID ?? '';
+    final userId = imLogic.userInfo.value.uid ?? '';
     if (userId.isNotEmpty) {
-      // 1. 先订阅本地数据库变化
-      _subscription = _requestDao
-          .watchIncomingWithProfile(userId)
-          .listen(
-            (list) {
-              requests.value = list;
-              isLoading.value = false;
-            },
-            onError: (_) {
-              isLoading.value = false;
-            },
-          );
+      // 订阅本地数据库变化（全部状态：待处理 / 已同意 / 已拒绝）
+      _incomingSub = _requestDao
+          .watchAllIncomingWithProfile(userId)
+          .listen((list) {
+            _incoming = list;
+            _incomingLoaded = true;
+            _merge();
+          });
 
-      // 2. 再向服务端拉取最新申请列表
+      _outgoingSub = _requestDao
+          .watchAllOutgoingWithProfile(userId)
+          .listen((list) {
+            _outgoing = list;
+            _outgoingLoaded = true;
+            _merge();
+          });
+
+      // 向服务端拉取最新申请列表
       _fetchFromServer(userId);
     } else {
+      isLoading.value = false;
+    }
+  }
+
+  /// 将收到和发出的申请合并，按时间倒序排列。
+  void _merge() {
+    final merged = <FriendRequestWithProfile>[..._incoming, ..._outgoing];
+    merged.sort((a, b) => b.request.createTime.compareTo(a.request.createTime));
+    allRequests.value = merged;
+    if (_incomingLoaded && _outgoingLoaded) {
       isLoading.value = false;
     }
   }
@@ -47,38 +68,43 @@ class FriendApplysLogic extends GetxController {
       final sinceId = await _requestDao.getMaxId();
       final list = await imLogic.fetchFriendApplys(sinceId: sinceId);
       if (list.isNotEmpty) {
-        await _requestDao.syncIncomingFromServer(userId, list, sinceId: sinceId);
+        await _requestDao.syncFromServer(userId, list, sinceId: sinceId);
       }
     } catch (e) {
       Logger.print('FriendApplysLogic — fetchFromServer error: $e');
     }
   }
 
-  /// 同意好友申请。
-  Future<void> accept(FriendRequestWithProfile item) async {
-    final success = await imLogic.acceptFriend(fromUid: item.request.fromUid);
-    if (success) {
-      await _requestDao.handle(item.request.id, true);
-      requests.refresh();
-    } else {
-      Get.snackbar('操作失败', '同意好友申请失败，请稍后重试');
-    }
+  /// 判断是否为当前用户发出的申请。
+  bool isOutgoing(FriendRequestWithProfile item) {
+    final currentUid = imLogic.userInfo.value.uid ?? '';
+    return item.request.uid == currentUid;
   }
 
-  /// 拒绝好友申请。
-  Future<void> reject(FriendRequestWithProfile item) async {
-    final success = await imLogic.rejectFriend(fromUid: item.request.fromUid);
+  /// 同意好友申请。成功返回 true。
+  Future<bool> accept(FriendRequestWithProfile item) async {
+    final success = await imLogic.acceptFriend(fromUid: item.request.uid);
+    if (success) {
+      await _requestDao.handle(item.request.id, true);
+      return true;
+    }
+    return false;
+  }
+
+  /// 拒绝好友申请。成功返回 true。
+  Future<bool> reject(FriendRequestWithProfile item) async {
+    final success = await imLogic.rejectFriend(fromUid: item.request.uid);
     if (success) {
       await _requestDao.handle(item.request.id, false);
-      requests.refresh();
-    } else {
-      Get.snackbar('操作失败', '拒绝好友申请失败，请稍后重试');
+      return true;
     }
+    return false;
   }
 
   @override
   void onClose() {
-    _subscription?.cancel();
+    _incomingSub?.cancel();
+    _outgoingSub?.cancel();
     super.onClose();
   }
 }

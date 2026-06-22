@@ -1,3 +1,4 @@
+import 'package:imclient_flutter/component/toast.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:imclient_flutter/common/models/user/user_info.dart';
@@ -53,12 +54,12 @@ class SearchFriendLogic extends GetxController {
     try {
       // 拉取完整用户资料
       final fullInfo = await imLogic.getUserFullInfo(
-        uid: userInfo.userID ?? '',
-        from: imLogic.userInfo.value.userID ?? '',
+        uid: userInfo.uid ?? '',
+        from: imLogic.userInfo.value.uid ?? '',
       );
       AppNavigator.startUserProfilePanel(userInfo: fullInfo);
     } catch (_) {
-      Get.snackbar('查询失败', '获取用户信息失败，请稍后重试');
+      AppToast.error('获取用户信息失败，请稍后重试');
     }
   }
 

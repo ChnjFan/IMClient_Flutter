@@ -48,9 +48,6 @@ class AppDatabase extends _$AppDatabase {
         onCreate: (m) async {
           await m.createAll();
         },
-        onUpgrade: (m, from, to) async {
-          // 后续版本在此处理迁移
-        },
       );
 }
 

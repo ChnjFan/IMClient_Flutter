@@ -1,3 +1,4 @@
+import 'package:imclient_flutter/component/toast.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:imclient_flutter/common/models/user/user_info.dart';
@@ -34,18 +35,18 @@ class ApplyFriendLogic extends GetxController {
     isLoading.value = true;
     try {
       final success = await imLogic.addFriend(
-        uid: targetUser.userID ?? '',
+        uid: targetUser.uid ?? '',
         reason: text,
       );
       if (success) {
         Get.back(result: true);
-        Get.snackbar('发送成功', '好友申请已发送');
+        AppToast.success('好友申请已发送');
       } else {
-        Get.snackbar('发送失败', '好友申请发送失败，请稍后重试');
+        AppToast.error('好友申请发送失败，请稍后重试');
       }
     } catch (e) {
       Logger.print('ApplyFriend — send error: $e');
-      Get.snackbar('发送失败', '好友申请发送失败，请稍后重试');
+      AppToast.error('好友申请发送失败，请稍后重试');
     } finally {
       isLoading.value = false;
     }

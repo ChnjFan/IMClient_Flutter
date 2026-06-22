@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../common/styles/colors.dart';
 import '../../../common/styles/text_styles.dart';
+import '../../../component/gender_picker.dart';
+import '../../../component/date_picker.dart';
+import '../../../component/region_picker.dart';
 import '../../../routes/app_navigator.dart';
 import 'user_detail_logic.dart';
 
@@ -25,53 +28,115 @@ class UserDetailPage extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 24),
-            _buildInfoSection(),
+            _buildBasicSection(),
+            const SizedBox(height: 12),
+            _buildDetailSection(),
+            const SizedBox(height: 32),
           ],
         ),
       ),
     );
   }
 
-  /// 信息列表
-  Widget _buildInfoSection() {
+  // ============================================================
+  // 基础信息卡片
+  // ============================================================
+  Widget _buildBasicSection() {
+    return _buildCard(children: [
+      Obx(() => _buildAvatarRow()),
+      _divider(),
+      Obx(() => _buildInfoRow(
+            label: '昵称',
+            value: logic.fullInfo.name ?? '未设置',
+            editable: true,
+            onTap: () async {
+              await AppNavigator.startNameEdit();
+              logic.refreshFromUserInfo();
+            },
+          )),
+      _divider(),
+      Obx(() => _buildInfoRow(
+            label: '邮箱',
+            value: logic.fullInfo.email ?? '未设置',
+            editable: true,
+            onTap: () async {
+              await AppNavigator.startEmailEdit();
+              logic.refreshFromUserInfo();
+            },
+          )),
+    ]);
+  }
+
+  // ============================================================
+  // 详细资料卡片
+  // ============================================================
+  Widget _buildDetailSection() {
+    return _buildCard(children: [
+      Obx(() => _buildInfoRow(
+            label: '手机号',
+            value: logic.fullInfo.phone ?? '未设置',
+            editable: true,
+            onTap: () async { await AppNavigator.startPhoneEdit(); logic.refreshFromUserInfo(); },
+          )),
+      _divider(),
+      Obx(() => _buildInfoRow(
+            label: '性别',
+            value: logic.genderText(logic.fullInfo.gender),
+            editable: true,
+            onTap: () => GenderPicker.show(selected: logic.fullInfo.gender, onSelected: (v) => logic.updateField('性别', v.toString())),
+          )),
+      _divider(),
+      Obx(() => _buildInfoRow(
+            label: '生日',
+            value: logic.fullInfo.birthday ?? '未设置',
+            editable: true,
+            onTap: () => DatePicker.show(title: '选择生日', initialDate: logic.fullInfo.birthday, onSelected: (v) => logic.updateField('生日', v)),
+          )),
+      _divider(),
+      Obx(() => _buildInfoRow(
+            label: '地区',
+            value: logic.fullInfo.region ?? '未设置',
+            editable: true,
+            onTap: () => RegionPicker.show(selected: logic.fullInfo.region, onSelected: (v) => logic.updateField('地区', v)),
+          )),
+      _divider(),
+      Obx(() => _buildInfoRow(
+            label: '个性签名',
+            value: logic.fullInfo.signature ?? '未设置',
+            editable: true,
+            onTap: () async { await AppNavigator.startSignatureEdit(); logic.refreshFromUserInfo(); },
+          )),
+      _divider(),
+      Obx(() => _buildInfoRow(
+            label: '个人简介',
+            value: logic.fullInfo.selfIntro ?? '未设置',
+            editable: true,
+            onTap: () async { await AppNavigator.startSelfIntroEdit(); logic.refreshFromUserInfo(); },
+          )),
+      _divider(),
+      Obx(() => _buildInfoRow(
+            label: '注册时间',
+            value: logic.formatTime(logic.fullInfo.createTime),
+          )),
+    ]);
+  }
+
+  // ============================================================
+  // 通用组件
+  // ============================================================
+
+  Widget _buildCard({required List<Widget> children}) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: AppColors.c_FFFFFF,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
-        children: [
-          // ---- 头像 ----
-          Obx(() => _buildAvatarRow()),
-          _divider(),
-          Obx(() => _buildInfoRow(
-                label: '昵称',
-                value: logic.imLogic.userInfo.value.name ?? '未设置',
-                editable: true,
-                onTap: () async {
-                  await AppNavigator.startNameEdit();
-                  logic.refreshFromUserInfo();
-                },
-              )),
-          _divider(),
-          Obx(() => _buildInfoRow(
-                label: '邮箱',
-                value: logic.imLogic.userInfo.value.email ?? '未设置',
-                editable: true,
-                onTap: () async {
-                  await AppNavigator.startEmailEdit();
-                  logic.refreshFromUserInfo();
-                },
-              )),
-        ],
-      ),
+      child: Column(children: children),
     );
   }
 
-  /// 头像行
   Widget _buildAvatarRow() {
-    final avatarUrl = logic.imLogic.userInfo.value.avatarUrl ?? '';
     return InkWell(
       onTap: () async {
         await AppNavigator.startAvatarEdit();
@@ -84,7 +149,6 @@ class UserDetailPage extends StatelessWidget {
           children: [
             Text('头像', style: AppTextStyles.ts_0C1C33_14sp),
             const Spacer(),
-            // 小头像预览
             Container(
               width: 48,
               height: 48,
@@ -92,11 +156,12 @@ class UserDetailPage extends StatelessWidget {
                 color: AppColors.c_0089FF_opacity10,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: avatarUrl.isNotEmpty
+              child: logic.fullInfo.avatarUrl != null &&
+                      logic.fullInfo.avatarUrl!.isNotEmpty
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: Image.network(
-                        avatarUrl,
+                        logic.fullInfo.avatarUrl!,
                         fit: BoxFit.cover,
                         errorBuilder: (_, e, s) => _defaultMiniAvatar(),
                       ),
@@ -104,11 +169,7 @@ class UserDetailPage extends StatelessWidget {
                   : _defaultMiniAvatar(),
             ),
             const SizedBox(width: 8),
-            const Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: AppColors.c_8E9AB0,
-            ),
+            const Icon(Icons.chevron_right, size: 20, color: AppColors.c_8E9AB0),
           ],
         ),
       ),
@@ -119,11 +180,10 @@ class UserDetailPage extends StatelessWidget {
     return const Icon(Icons.person, size: 28, color: AppColors.c_0089FF);
   }
 
-  /// 单行信息
   Widget _buildInfoRow({
     required String label,
     required String value,
-    bool editable = true,
+    bool editable = false,
     VoidCallback? onTap,
   }) {
     return InkWell(
@@ -134,30 +194,20 @@ class UserDetailPage extends StatelessWidget {
         child: Row(
           children: [
             SizedBox(
-              width: 64,
-              child: Text(
-                label,
-                style: AppTextStyles.ts_0C1C33_14sp,
-              ),
+              width: 72,
+              child: Text(label, style: AppTextStyles.ts_0C1C33_14sp),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 value,
                 textAlign: TextAlign.end,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.c_8E9AB0,
-                ),
+                style: const TextStyle(fontSize: 14, color: AppColors.c_8E9AB0),
               ),
             ),
             if (editable) ...[
               const SizedBox(width: 8),
-              const Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: AppColors.c_8E9AB0,
-              ),
+              const Icon(Icons.chevron_right, size: 20, color: AppColors.c_8E9AB0),
             ],
           ],
         ),
@@ -167,10 +217,8 @@ class UserDetailPage extends StatelessWidget {
 
   Widget _divider() {
     return const Divider(
-      height: 1,
-      indent: 16,
-      endIndent: 16,
-      color: AppColors.c_F0F2F6,
+      height: 1, indent: 16, endIndent: 16, color: AppColors.c_F0F2F6,
     );
   }
+
 }

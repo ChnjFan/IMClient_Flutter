@@ -62,6 +62,21 @@ class AppNavigator {
     return Get.toNamed(AppRoutes.avatarEdit);
   }
 
+  /// Navigate to phone edit page.
+  static Future<T?>? startPhoneEdit<T extends Object?>() {
+    return Get.toNamed(AppRoutes.phoneEdit);
+  }
+
+  /// Navigate to signature edit page.
+  static Future<T?>? startSignatureEdit<T extends Object?>() {
+    return Get.toNamed(AppRoutes.signatureEdit);
+  }
+
+  /// Navigate to self intro edit page.
+  static Future<T?>? startSelfIntroEdit<T extends Object?>() {
+    return Get.toNamed(AppRoutes.selfIntroEdit);
+  }
+
   /// Navigate to about page.
   static Future<T?>? startAbout<T extends Object?>() {
     return Get.toNamed(AppRoutes.about);
@@ -94,5 +109,12 @@ class AppNavigator {
   /// Navigate to friend applys (好友请求列表) page.
   static Future<T?>? startFriendApplys<T extends Object?>() {
     return Get.toNamed(AppRoutes.friendApplys);
+  }
+
+  /// Navigate to process apply (处理好友申请) page.
+  static Future<T?>? startProcessApply<T extends Object?>({
+    required dynamic item,
+  }) {
+    return Get.toNamed(AppRoutes.processApply, arguments: item);
   }
 }

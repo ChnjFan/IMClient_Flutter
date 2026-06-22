@@ -6,7 +6,7 @@ import 'dart:convert';
 /// ```json
 /// {
 ///   "error": 0,
-///   "userID": "123456",
+///   "uid": "123456",
 ///   "imToken": "eyJ..."
 /// }
 /// ```

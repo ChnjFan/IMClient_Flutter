@@ -1,14 +1,16 @@
+import 'package:imclient_flutter/component/toast.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../common/apis.dart';
+import '../../common/db/database.dart';
 import '../../common/utils/logger.dart';
-import '../../common/utils/storage.dart';
 import '../../core/controller/im_controller.dart';
 import '../../routes/app_navigator.dart';
 
 class LoginLogic extends GetxController {
   final IMController imLogic = Get.find<IMController>();
+  final AppDatabase _db = Get.find<AppDatabase>();
 
   // Controllers
   final emailCtrl = TextEditingController();
@@ -47,12 +49,9 @@ class LoginLogic extends GetxController {
   }
 
   Future<void> _initData() async {
-    final map = await Storage.getLoginAccount();
-    if (map != null) {
-      final email = map['email'] as String?;
-      if (email != null && email.isNotEmpty) {
-        emailCtrl.text = email;
-      }
+    final credential = await _db.credentialDao.getLatest();
+    if (credential != null && credential.email != null) {
+      emailCtrl.text = credential.email!;
     }
   }
 
@@ -81,20 +80,15 @@ class LoginLogic extends GetxController {
       // IM login
       await imLogic.login(cert);
 
-      // 默认保存凭据供下次自动登录
-      await Storage.putLoginCertificate(
-        userID: cert.userId,
+      // 保存登录凭证到本地数据库，供下次自动登录
+      await _db.credentialDao.save(
+        userId: cert.userId,
         token: cert.chatToken,
+        email: imLogic.userInfo.value.email,
+        serverHost: cert.chatServerIp,
+        serverPort: cert.chatServerPort,
+        phoneNumber: imLogic.userInfo.value.email,
       );
-      // 记录登录用户信息和服务器信息（从 IMController Rx 读取，
-      // chatLoginRsp 可能已回填 HTTP 登录未返回的用户资料字段）
-      await Storage.setLoginAccount({
-        'email': imLogic.userInfo.value.email,
-        'nickname': imLogic.userInfo.value.name,
-        'host': cert.chatServerIp,
-        'port': cert.chatServerPort,
-        'avatar_url': imLogic.userInfo.value.avatarUrl,
-      });
 
       Logger.print('Login success — navigating to home');
       AppNavigator.startMain();
@@ -121,13 +115,5 @@ class LoginLogic extends GetxController {
     }
   }
 
-  void _showToast(String msg) {
-    Get.snackbar('', msg,
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
-        backgroundColor: Colors.black87,
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 8);
-  }
+  void _showToast(String msg) => AppToast.show(msg);
 }

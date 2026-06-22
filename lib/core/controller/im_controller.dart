@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:get/get.dart';
+import 'package:imclient_flutter/common/db/database.dart';
 import 'package:imclient_flutter/common/models/user/user_full_info.dart';
 import 'package:imclient_flutter/routes/app_navigator.dart';
 import 'package:imclient_flutter/common/models/login_certificate.dart';
@@ -7,7 +8,6 @@ import 'package:imclient_flutter/common/models/msg_id.dart';
 import 'package:imclient_flutter/common/models/server_resp.dart';
 import 'package:imclient_flutter/common/models/user/user_info.dart';
 import 'package:imclient_flutter/common/utils/logger.dart';
-import 'package:imclient_flutter/common/utils/storage.dart';
 import 'package:imclient_flutter/common/utils/tcp_utils.dart';
 import 'chat_tcp_client.dart';
 
@@ -50,6 +50,7 @@ class IMController extends GetxController {
   // ---- User info (reactive) ----
   /// 初始化为空 [UserInfo]，login() 成功后从 chatLoginRsp 更新其字段。
   final userInfo = UserInfo().obs;
+  final userFullInfo = UserFullInfo().obs;
 
   /// 新的朋友申请未读计数，收到 notifyFriendApply 通知时自增。
   final newFriendApplyCount = 0.obs;
@@ -80,7 +81,7 @@ class IMController extends GetxController {
   /// 用户登录逻辑：建立 TCP 连接，发送 chatLoginReq，等待 chatLoginRsp 应答。
   /// 成功无返回值，失败抛异常并断开 TCP。
   Future<void> login(LoginCertificate cert) async {
-    Logger.print('IMController — logging in userID: ${cert.userId} server: ${cert.chatServerIp}:${cert.chatServerPort}');
+    Logger.print('IMController — logging in uid: ${cert.userId} server: ${cert.chatServerIp}:${cert.chatServerPort}');
     imSdkStatus(IMSdkStatus.connecting);
 
     try {
@@ -120,7 +121,7 @@ class IMController extends GetxController {
       final resp = await _tcp.sendRequest(
         MsgId.getFirstLoginInfoReq,
         MsgId.getFirstLoginInfoRsp,
-        {'uid': userInfo.value.userID},
+        {'uid': userInfo.value.uid},
       );
 
       if (resp != null && resp.isSuccess) {
@@ -139,17 +140,30 @@ class IMController extends GetxController {
     required String uid,
     String? name,
     String? email,
-    String? avatarUrl
+    String? avatarUrl,
+    String? phone,
+    int? gender,
+    String? birthday,
+    String? region,
+    String? signature,
+    String? selfIntro,
   }) async {
+    // 仅发送 uid 和有值的字段
+    final body = <String, dynamic>{'uid': uid};
+    if (name != null) body['name'] = name;
+    if (email != null) body['email'] = email;
+    if (avatarUrl != null) body['avatar_url'] = avatarUrl;
+    if (phone != null) body['phone'] = phone;
+    if (gender != null) body['gender'] = gender;
+    if (birthday != null) body['birthday'] = birthday;
+    if (region != null) body['region'] = region;
+    if (signature != null) body['signature'] = signature;
+    if (selfIntro != null) body['self_intro'] = selfIntro;
+
     final resp = await _tcp.sendRequest(
       MsgId.updateUserInfoReq,
       MsgId.updateUserInfoRsp,
-      {
-        'uid': uid,
-        'name': name,
-        'email': email,
-        'avatar_url': avatarUrl,
-      },
+      body,
     );
 
     if (resp == null || !resp.isSuccess) {
@@ -158,21 +172,29 @@ class IMController extends GetxController {
     }
 
     final updated = userInfo.value;
+    final updatedFull = userFullInfo.value;
     if (name != null) updated.name = name;
     if (email != null) updated.email = email;
     if (avatarUrl != null) updated.avatarUrl = avatarUrl;
+    if (phone != null) updatedFull.phone = phone;
+    if (gender != null) updatedFull.gender = gender;
+    if (birthday != null) updatedFull.birthday = birthday;
+    if (region != null) updatedFull.region = region;
+    if (signature != null) updatedFull.signature = signature;
+    if (selfIntro != null) updatedFull.selfIntro = selfIntro;
     userInfo.refresh();
     return true;
   }
 
   Future<UserInfo> searchUserInfo({
+    String? uid,
     String? email,
     String? nickname,
   }) async {
     final resp = await _tcp.sendRequest(
       MsgId.searchUserReq,
       MsgId.searchUserRsp,
-      {'email': email, 'name': nickname},
+      {'uid': uid, 'email': email, 'name': nickname},
     );
 
     if (resp == null || !resp.isSuccess) {
@@ -193,7 +215,7 @@ class IMController extends GetxController {
     final resp = await _tcp.sendRequest(
       MsgId.addFriendReq,
       MsgId.addFriendRsp,
-      {'uid': userInfo.value.userID, 'friend_id': uid, 'msg': reason},
+      {'uid': userInfo.value.uid, 'friend_id': uid, 'msg': reason},
     );
 
     if (resp == null || !resp.isSuccess) {
@@ -211,7 +233,7 @@ class IMController extends GetxController {
     final resp = await _tcp.sendRequest(
       MsgId.getFriendApplyReq,
       MsgId.getFriendApplyRsp,
-      {'uid': userInfo.value.userID, 'since_id': sinceId},
+      {'uid': userInfo.value.uid, 'since_id': sinceId},
     );
 
     if (resp == null || !resp.isSuccess) {
@@ -219,7 +241,7 @@ class IMController extends GetxController {
       return [];
     }
 
-    final list = resp.get<List<dynamic>>('list') ?? [];
+    final list = resp.get<List<dynamic>>('data') ?? [];
     return list.cast<Map<String, dynamic>>();
   }
 
@@ -230,7 +252,7 @@ class IMController extends GetxController {
     final resp = await _tcp.sendRequest(
       MsgId.friendAuthReq,
       MsgId.friendAuthRsp,
-      {'uid': userInfo.value.userID, 'from_uid': fromUid, 'result': 1},
+      {'uid': userInfo.value.uid, 'friend_id': fromUid, 'result': 1},
     );
 
     if (resp == null || !resp.isSuccess) {
@@ -247,7 +269,7 @@ class IMController extends GetxController {
     final resp = await _tcp.sendRequest(
       MsgId.friendAuthReq,
       MsgId.friendAuthRsp,
-      {'uid': userInfo.value.userID, 'from_uid': fromUid, 'result': 0},
+      {'uid': userInfo.value.uid, 'friend_id': fromUid, 'result': 0},
     );
 
     if (resp == null || !resp.isSuccess) {
@@ -255,6 +277,26 @@ class IMController extends GetxController {
       return false;
     }
     return true;
+  }
+
+  /// 拉取好友列表（支持增量拉取）。
+  ///
+  /// [sinceId] 本地已存储的最大 id，服务端只返回
+  /// id > sinceId 的新好友记录。传 0 时拉取全量。
+  Future<List<Map<String, dynamic>>> fetchFriendList({int sinceId = 0}) async {
+    final resp = await _tcp.sendRequest(
+      MsgId.getFriendListReq,
+      MsgId.getFriendListRsp,
+      {'uid': userInfo.value.uid, 'since_id': sinceId},
+    );
+
+    if (resp == null || !resp.isSuccess) {
+      Logger.print('IMController — fetchFriendList failed: ${resp?.errCode}');
+      return [];
+    }
+
+    final list = resp.get<List<dynamic>>('data') ?? [];
+    return list.cast<Map<String, dynamic>>();
   }
 
   Future<UserFullInfo> getUserFullInfo({
@@ -308,12 +350,12 @@ class IMController extends GetxController {
   }
 
   void _onNotifyAddFriend(ServerResp resp) {
-    Logger.print('IMController — friend request from: ${resp.get('fromUid')}');
+    Logger.print('IMController — friend request from: ${resp.get('friend_id')}');
     newFriendApplyCount.value++;
   }
 
   void _onNotifyFriendAuth(ServerResp resp) =>
-      Logger.print('IMController — friend auth result from: ${resp.get('fromUid')}');
+      Logger.print('IMController — friend auth result from: ${resp.get('friend_id')}');
 
   void _onNotifyChatMsg(ServerResp resp) =>
       Logger.print('IMController — new message from: ${resp.get('fromUid')}');
@@ -333,7 +375,10 @@ class IMController extends GetxController {
     _tcp.disconnect();
     _isInitialized = false;
     imSdkStatus(IMSdkStatus.notInitialized);
-    await Storage.removeLoginCertificate();
+    // 清除数据库中的登录凭证
+    try {
+      await Get.find<AppDatabase>().credentialDao.clear();
+    } catch (_) {}
   }
 
   void imSdkStatus(IMSdkStatus status, {int? progress, bool reInstall = false}) {

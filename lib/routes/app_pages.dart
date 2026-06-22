@@ -16,6 +16,12 @@ import '../pages/mine/detail/email_edit/email_edit_binding.dart';
 import '../pages/mine/detail/email_edit/email_edit_view.dart';
 import '../pages/mine/detail/name_edit/name_edit_binding.dart';
 import '../pages/mine/detail/name_edit/name_edit_view.dart';
+import '../pages/mine/detail/phone_edit/phone_edit_binding.dart';
+import '../pages/mine/detail/phone_edit/phone_edit_view.dart';
+import '../pages/mine/detail/signature_edit/signature_edit_binding.dart';
+import '../pages/mine/detail/signature_edit/signature_edit_view.dart';
+import '../pages/mine/detail/self_intro_edit/self_intro_edit_binding.dart';
+import '../pages/mine/detail/self_intro_edit/self_intro_edit_view.dart';
 import '../pages/mine/detail/user_detail_binding.dart';
 import '../pages/mine/detail/user_detail_view.dart';
 import '../pages/contacts/add_method/add_method_binding.dart';
@@ -26,6 +32,8 @@ import '../pages/contacts/add_method/apply_friend/apply_friend_binding.dart';
 import '../pages/contacts/add_method/apply_friend/apply_friend_view.dart';
 import '../pages/contacts/friend_applys/friend_applys_binding.dart';
 import '../pages/contacts/friend_applys/friend_applys_view.dart';
+import '../pages/contacts/friend_applys/process_apply/process_apply_binding.dart';
+import '../pages/contacts/friend_applys/process_apply/process_apply_view.dart';
 import '../pages/contacts/user_profile_panel/user_profile_panel_binding.dart';
 import '../pages/contacts/user_profile_panel/user_profile_panel_view.dart';
 import '../pages/splash/splash_binding.dart';
@@ -100,6 +108,21 @@ class AppPages {
       popGesture: false,
     ),
     _pageBuilder(
+      name: AppRoutes.phoneEdit,
+      page: () => PhoneEditPage(),
+      binding: PhoneEditBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.signatureEdit,
+      page: () => SignatureEditPage(),
+      binding: SignatureEditBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.selfIntroEdit,
+      page: () => SelfIntroEditPage(),
+      binding: SelfIntroEditBinding(),
+    ),
+    _pageBuilder(
       name: AppRoutes.about,
       page: () => AboutPage(),
       binding: AboutBinding(),
@@ -128,6 +151,11 @@ class AppPages {
       name: AppRoutes.friendApplys,
       page: () => FriendApplysPage(),
       binding: FriendApplysBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.processApply,
+      page: () => const ProcessApplyPage(),
+      binding: ProcessApplyBinding(),
     ),
   ];
 }

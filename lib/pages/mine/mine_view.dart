@@ -26,7 +26,7 @@ class MinePage extends StatelessWidget {
                   nickname: logic.nickname,
                   email: logic.email,
                   avatarUrl: logic.avatarUrl,
-                  onTap: () => AppNavigator.startUserDetail(),
+                  onTap: () => logic.fetchUserDetail(),
                 )),
             const SizedBox(height: 24),
             // ---- 菜单项 ----

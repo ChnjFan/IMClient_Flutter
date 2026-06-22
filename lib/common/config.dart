@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -8,7 +9,6 @@ import 'package:path_provider/path_provider.dart';
 
 import '../core/controller/im_controller.dart';
 import 'utils/logger.dart';
-import 'utils/storage.dart';
 import 'utils/http_utils.dart';
 import 'db/database.dart';
 
@@ -17,7 +17,7 @@ import 'db/database.dart';
 /// 负责：
 /// - 应用启动初始化（平台绑定、存储路径、系统 UI 风格）
 /// - 设计尺寸常量（UI 适配基准）
-/// - 服务端地址配置（预留 IM SDK 接入）
+/// - 服务端地址配置（从本地数据库读取缓存）
 class AppConfig {
   AppConfig._();
 
@@ -40,10 +40,20 @@ class AppConfig {
       cachePath = '/';
     }
 
-    // 初始化本地存储
-    await Storage.init();
     // 初始化本地数据库
     final db = AppDatabase();
+    // 从 DB 中恢复服务端配置到内存缓存
+    try {
+      final credential = await db.credentialDao.getLatest();
+      if (credential != null) {
+        _cachedServerHost = credential.serverHost;
+        if (credential.serverConfig != null &&
+            credential.serverConfig!.isNotEmpty) {
+          _cachedServerConfig = jsonDecode(credential.serverConfig!)
+              as Map<String, dynamic>?;
+        }
+      }
+    } catch (_) {}
     // 将数据库实例放入 GetX 依赖管理中，设置为永久实例
     Get.put<AppDatabase>(db, permanent: true);
     // 将 IMController 注册为全局永久单例（避免 route scope 导致多实例）
@@ -111,26 +121,29 @@ class AppConfig {
   static const double textScaleFactor = 1.0;
 
   // ============================================================
-  // 服务端配置（预留 IM SDK 接入时使用）
+  // 服务端配置
   // ============================================================
 
   /// 默认服务器地址
   static const String _defaultHost = '127.0.0.1';
+
+  /// 从 DB 恢复的服务端地址缓存
+  static String? _cachedServerHost;
+
+  /// 从 DB 恢复的完整服务端配置缓存
+  static Map<String, dynamic>? _cachedServerConfig;
 
   /// 是否为 IP 地址
   static bool get _isIP =>
       RegExp(r'((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)')
           .hasMatch(serverHost);
 
-  /// 服务器地址（优先使用 Storage 中的配置，否则使用默认值）
-  static String get serverHost {
-    final stored = Storage.getServerHostSync();
-    return stored ?? _defaultHost;
-  }
+  /// 服务器地址（优先使用 DB 缓存中的配置，否则使用默认值）
+  static String get serverHost => _cachedServerHost ?? _defaultHost;
 
   /// 网关地址
   static String get gateServerUrl {
-    final stored = Storage.getServerConfigSync()?['gateServerUrl'] as String?;
+    final stored = _cachedServerConfig?['gateServerUrl'] as String?;
     return stored ??
         (_isIP ? 'http://$_defaultHost:8080' : 'https://$_defaultHost/gateway');
   }

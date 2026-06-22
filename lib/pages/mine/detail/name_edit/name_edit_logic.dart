@@ -1,3 +1,4 @@
+import 'package:imclient_flutter/component/toast.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/controller/im_controller.dart';
@@ -43,14 +44,14 @@ class NameEditLogic extends GetxController {
   Future<void> save() async {
     final newName = nameCtrl.text.trim();
     if (newName.isEmpty) {
-      Get.snackbar('', '昵称不能为空', snackPosition: SnackPosition.BOTTOM);
+      AppToast.show('昵称不能为空');
       return;
     }
 
-    String uid = imLogic.userInfo.value.userID ?? '';
+    String uid = imLogic.userInfo.value.uid ?? '';
     final success = await imLogic.updateUserInfo(uid: uid, name: newName);
     if (!success) {
-      Get.snackbar('', '更新昵称失败', snackPosition: SnackPosition.BOTTOM);
+      AppToast.error('更新昵称失败');
       return;
     }
     Get.back(result: newName);

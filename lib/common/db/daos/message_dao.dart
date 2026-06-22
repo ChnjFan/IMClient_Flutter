@@ -29,7 +29,7 @@ class MessageDao extends DatabaseAccessor<AppDatabase>
   }) =>
       (select(messages)
         ..where((m) => m.conversationId.equals(conversationId))
-        ..orderBy([(m) => OrderingTerm(expression: m.sendTime, mode: OrderingMode.desc)])
+        ..orderBy([(m) => OrderingTerm(expression: m.createTime, mode: OrderingMode.desc)])
         ..limit(limit, offset: offset))
           .get();
 
@@ -40,7 +40,7 @@ class MessageDao extends DatabaseAccessor<AppDatabase>
   }) =>
       (select(messages)
         ..where((m) => m.conversationId.equals(conversationId))
-        ..orderBy([(m) => OrderingTerm(expression: m.sendTime, mode: OrderingMode.desc)])
+        ..orderBy([(m) => OrderingTerm(expression: m.createTime, mode: OrderingMode.desc)])
         ..limit(limit))
           .watch();
 
@@ -66,6 +66,6 @@ class MessageDao extends DatabaseAccessor<AppDatabase>
 
   /// 清理 N 天前的旧消息（返回删除条数）。
   Future<int> deleteOlderThan(int timestampMs) =>
-      (delete(messages)..where((m) => m.sendTime.isSmallerThanValue(timestampMs)))
+      (delete(messages)..where((m) => m.createTime.isSmallerThanValue(timestampMs)))
           .go();
 }

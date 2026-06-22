@@ -1,3 +1,4 @@
+import 'package:imclient_flutter/component/toast.dart';
 import 'dart:ui';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
@@ -71,7 +72,7 @@ class AvatarEditLogic extends GetxController {
   Future<void> saveToGallery() async {
     final url = avatarUrl;
     if (url.isEmpty) {
-      Get.snackbar('', '暂无头像可保存', snackPosition: SnackPosition.BOTTOM);
+      AppToast.show('暂无头像可保存');
       return;
     }
 
@@ -84,18 +85,18 @@ class AvatarEditLogic extends GetxController {
       } else {
         await ImageGallerySaver.saveFile(url);
       }
-      Get.snackbar('', '已保存到相册', snackPosition: SnackPosition.BOTTOM);
+      AppToast.success('已保存到相册');
     } catch (e) {
-      Get.snackbar('', '保存失败', snackPosition: SnackPosition.BOTTOM);
+      AppToast.error('保存失败');
     }
   }
 
   /// 更新头像
   Future<void> _updateAvatar(String path) async {
-    final uid = imLogic.userInfo.value.userID ?? '';
+    final uid = imLogic.userInfo.value.uid ?? '';
     final success = await imLogic.updateUserInfo(uid: uid, avatarUrl: path);
     if (!success) {
-      Get.snackbar('', '更新头像失败', snackPosition: SnackPosition.BOTTOM);
+      AppToast.error('更新头像失败');
       return;
     }
     Get.back(result: path);

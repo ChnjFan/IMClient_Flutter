@@ -16,24 +16,24 @@ class FriendRequestDao extends DatabaseAccessor<AppDatabase>
   Future<int> insert(FriendRequestsCompanion data) =>
       into(friendRequests).insert(data);
 
-  /// 收到的好友申请（toUid == 当前用户，待确认状态）。
+  /// 收到的好友申请（friendId == 当前用户，待确认状态）。
   Stream<List<FriendRequest>> watchIncoming(String currentUid) =>
       (select(friendRequests)
             ..where(
-                (r) => r.toUid.equals(currentUid) & r.status.equals(0)))
+                (r) => r.friendId.equals(currentUid) & r.status.equals(0)))
           .watch();
 
-  /// 发出的好友申请（fromUid == 当前用户）。
+  /// 发出的好友申请（uid == 当前用户）。
   Stream<List<FriendRequest>> watchOutgoing(String currentUid) =>
       (select(friendRequests)
-            ..where((r) => r.fromUid.equals(currentUid)))
+            ..where((r) => r.uid.equals(currentUid)))
           .watch();
 
   /// 待处理申请数量（红点/角标用）。
   Stream<int> watchPendingCount(String currentUid) {
     final q = selectOnly(friendRequests)
       ..addColumns([friendRequests.id.count()])
-      ..where(friendRequests.toUid.equals(currentUid) &
+      ..where(friendRequests.friendId.equals(currentUid) &
           friendRequests.status.equals(0));
     return q
         .map((row) => row.read(friendRequests.id.count()) ?? 0)
@@ -45,10 +45,59 @@ class FriendRequestDao extends DatabaseAccessor<AppDatabase>
       String currentUid) {
     final query = select(friendRequests).join([
       leftOuterJoin(
-          userProfiles, userProfiles.userId.equalsExp(friendRequests.fromUid)),
+          userProfiles, userProfiles.userId.equalsExp(friendRequests.uid)),
     ])
-      ..where(friendRequests.toUid.equals(currentUid) &
+      ..where(friendRequests.friendId.equals(currentUid) &
           friendRequests.status.equals(0));
+    return query.map((row) {
+      return FriendRequestWithProfile(
+        request: row.readTable(friendRequests),
+        fromProfile: row.readTableOrNull(userProfiles),
+      );
+    }).watch();
+  }
+
+  /// 发出的好友申请 + 对方资料联表查询（含头像、昵称）。
+  Stream<List<FriendRequestWithProfile>> watchOutgoingWithProfile(
+      String currentUid) {
+    final query = select(friendRequests).join([
+      leftOuterJoin(
+          userProfiles, userProfiles.userId.equalsExp(friendRequests.friendId)),
+    ])
+      ..where(friendRequests.uid.equals(currentUid) &
+          friendRequests.status.equals(0));
+    return query.map((row) {
+      return FriendRequestWithProfile(
+        request: row.readTable(friendRequests),
+        fromProfile: row.readTableOrNull(userProfiles),
+      );
+    }).watch();
+  }
+
+  /// 收到的好友申请（全部状态）+ 申请人资料联表查询。
+  Stream<List<FriendRequestWithProfile>> watchAllIncomingWithProfile(
+      String currentUid) {
+    final query = select(friendRequests).join([
+      leftOuterJoin(
+          userProfiles, userProfiles.userId.equalsExp(friendRequests.uid)),
+    ])
+      ..where(friendRequests.friendId.equals(currentUid));
+    return query.map((row) {
+      return FriendRequestWithProfile(
+        request: row.readTable(friendRequests),
+        fromProfile: row.readTableOrNull(userProfiles),
+      );
+    }).watch();
+  }
+
+  /// 发出的好友申请（全部状态）+ 对方资料联表查询。
+  Stream<List<FriendRequestWithProfile>> watchAllOutgoingWithProfile(
+      String currentUid) {
+    final query = select(friendRequests).join([
+      leftOuterJoin(
+          userProfiles, userProfiles.userId.equalsExp(friendRequests.friendId)),
+    ])
+      ..where(friendRequests.uid.equals(currentUid));
     return query.map((row) {
       return FriendRequestWithProfile(
         request: row.readTable(friendRequests),
@@ -63,8 +112,7 @@ class FriendRequestDao extends DatabaseAccessor<AppDatabase>
     await (update(friendRequests)..where((r) => r.id.equals(id)))
         .write(FriendRequestsCompanion(
       status: Value(accept ? 1 : 2),
-      handledAt: Value(now),
-      updatedAt: Value(now),
+      updateTime: Value(now),
     ));
   }
 
@@ -84,26 +132,31 @@ class FriendRequestDao extends DatabaseAccessor<AppDatabase>
     return maxId;
   }
 
-  /// 从服务端同步好友申请列表（增量模式）。
+  /// 从服务端同步好友申请列表（增量模式），同时处理收到和发出的申请。
   ///
-  /// [sinceId] == 0 时（首次拉取），先删除当前用户待处理的所有收到申请，
+  /// 服务端返回的列表中，[uid] 是发起申请的人，[friend_id] 是被添加的目标：
+  /// - [uid] == currentUid → 发出的申请
+  /// - [friend_id] == currentUid → 收到的申请
+  ///
+  /// [sinceId] == 0 时（首次拉取），先删除当前用户相关的所有待处理申请，
   /// 再批量插入服务端返回的全量列表。
   ///
   /// [sinceId] > 0 时（增量拉取），直接 upsert 服务端返回的新记录，
   /// 保留本地已有数据。
   ///
   /// 同时将申请人的资料（name, avatar_url 等）写入 [UserProfiles] 表。
-  Future<void> syncIncomingFromServer(
+  Future<void> syncFromServer(
     String currentUid,
     List<Map<String, dynamic>> list, {
     int sinceId = 0,
   }) async {
     await batch((batch) {
-      // 首次拉取时清空旧待处理申请
+      // 首次拉取时清空当前用户相关的所有待处理申请
       if (sinceId == 0) {
         batch.deleteWhere(
           friendRequests,
-          (r) => r.toUid.equals(currentUid) & r.status.equals(0),
+          (r) => (r.friendId.equals(currentUid) | r.uid.equals(currentUid)) &
+              r.status.equals(0),
         );
       }
 
@@ -111,30 +164,36 @@ class FriendRequestDao extends DatabaseAccessor<AppDatabase>
 
       for (final item in list) {
         final serverId = item['id'] as int?;
-        final fromUid = item['uid'] as String? ?? '';
-        final toUid = item['friend_uid'] as String? ?? '';
+        final uid = item['uid'] as String? ?? '';
+        final friendId = item['friend_id'] as String? ?? '';
+
+        // 只保留与当前用户相关的申请（收到的或发出的）
+        final isReceived = friendId == currentUid;
+        final isSent = uid == currentUid;
+        if (!isReceived && !isSent) continue;
+
         final message = item['msg'] as String?;
         final status = item['status'] as int? ?? 0;
-        final createdAt = item['created_time'] as int? ?? now;
+        final createTime = _parseTime(item['created_time'] as String?) ?? now;
 
         // 始终使用服务端返回的 id，保证 getMaxId() 与服务端游标一致
         final companion = serverId != null
             ? FriendRequestsCompanion(
                 id: Value(serverId),
-                fromUid: Value(fromUid),
-                toUid: Value(toUid),
+                uid: Value(uid),
+                friendId: Value(friendId),
                 message: Value(message),
                 status: Value(status),
-                createdAt: Value(createdAt),
-                updatedAt: Value(now),
+                createTime: Value(createTime),
+                updateTime: Value(now),
               )
             : FriendRequestsCompanion.insert(
-                fromUid: fromUid,
-                toUid: toUid,
+                uid: uid,
+                friendId: friendId,
                 message: Value(message),
                 status: Value(status),
-                createdAt: createdAt,
-                updatedAt: now,
+                createTime: createTime,
+                updateTime: now,
               );
 
         batch.insert(
@@ -143,26 +202,33 @@ class FriendRequestDao extends DatabaseAccessor<AppDatabase>
           mode: InsertMode.insertOrReplace,
         );
 
-        // 如果带有申请人资料，写入 user_profiles
-        final profile = item['from_profile'];
-        if (profile is Map<String, dynamic>) {
-          final profileUid = profile['uid'] as String? ?? fromUid;
+        // 将申请人的资料写入 user_profiles（服务端返回的是平铺字段）
+        if (uid.isNotEmpty) {
           batch.insert(
             userProfiles,
             UserProfilesCompanion.insert(
-              userId: profileUid,
-              name: Value(profile['name'] as String?),
-              avatarUrl: Value(profile['avatar_url'] as String?),
-              email: Value(profile['email'] as String?),
+              userId: uid,
+              name: Value(item['name'] as String?),
+              alias: Value(item['alias'] as String? ?? item['alias'] as String?),
+              avatarUrl: Value(item['avatar_url'] as String?),
+              email: Value(item['email'] as String?),
+              region: Value(item['region'] as String?),
+              gender: Value(item['gender'] as int? ?? 0),
               isSelf: const Value(false),
-              createdAt: now,
-              updatedAt: now,
+              createTime: now,
+              updateTime: now,
             ),
             mode: InsertMode.insertOrReplace,
           );
         }
       }
     });
+  }
+
+  /// 解析服务端返回的时间字符串（"2026-06-21 19:21:31"）为毫秒时间戳。
+  int? _parseTime(String? timeStr) {
+    if (timeStr == null || timeStr.isEmpty) return null;
+    return DateTime.tryParse(timeStr)?.millisecondsSinceEpoch;
   }
 }
 

@@ -13,28 +13,55 @@ class UserProfilePanelPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = logic.userFullInfo;
-
     return Scaffold(
       backgroundColor: AppColors.c_F0F2F6,
       appBar: AppBar(
-        title: Text(user.getShowName()),
+        title: Obx(() {
+          final user = logic.userFullInfo.value;
+          return Text(user?.getShowName() ?? '用户详情');
+        }),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 32),
-            // ---- 头像 & 名称 ----
-            _buildAvatarSection(user),
-            const SizedBox(height: 24),
-            // ---- 信息卡片 ----
-            _buildInfoCard(user),
-            const SizedBox(height: 32),
-            // ---- 操作按钮 ----
-            _buildActionButton(user),
-          ],
-        ),
-      ),
+      body: Obx(() {
+        if (logic.isLoading.value) {
+          return const Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.c_0089FF,
+              ),
+            ),
+          );
+        }
+
+        if (logic.loadError.value.isNotEmpty) {
+          return Center(
+            child: Text(
+              logic.loadError.value,
+              style: AppTextStyles.ts_8E9AB0_12sp,
+            ),
+          );
+        }
+
+        final user = logic.userFullInfo.value;
+        if (user == null) {
+          return const SizedBox.shrink();
+        }
+
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              const SizedBox(height: 32),
+              _buildAvatarSection(user),
+              const SizedBox(height: 24),
+              _buildInfoCard(user),
+              const SizedBox(height: 32),
+              _buildActionButton(user),
+            ],
+          ),
+        );
+      }),
     );
   }
 
@@ -114,7 +141,7 @@ class UserProfilePanelPage extends StatelessWidget {
           _divider(),
           _buildInfoRow('手机号', user.phone ?? '未设置'),
           _divider(),
-          _buildInfoRow('备注', user.remark ?? '未设置'),
+          _buildInfoRow('备注', user.alias ?? '未设置'),
           _divider(),
           _buildInfoRow('个性签名', user.signature ?? '未设置'),
           _divider(),

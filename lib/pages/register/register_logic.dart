@@ -1,3 +1,4 @@
+import 'package:imclient_flutter/component/toast.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../common/apis.dart';
@@ -97,13 +98,5 @@ class RegisterLogic extends GetxController {
     }
   }
 
-  void _showToast(String msg) {
-    Get.snackbar('', msg,
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 2),
-        backgroundColor: Colors.black87,
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 8);
-  }
+  void _showToast(String msg) => AppToast.show(msg);
 }

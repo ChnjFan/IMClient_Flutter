@@ -15,12 +15,96 @@ class FriendDao extends DatabaseAccessor<AppDatabase> with _$FriendDaoMixin {
   Future<void> upsert(FriendsCompanion data) =>
       into(friends).insertOnConflictUpdate(data);
 
-  /// 批量同步好友列表（全量替换，用于初次拉取服务端好友列表）。
-  Future<void> syncFromServer(List<FriendsCompanion> list) async {
+  /// 获取本地好友表中最大的 id。
+  ///
+  /// 好友表以 userId 为主键，使用服务端返回的 id 作为增量拉取的游标。
+  /// 表为空时返回 0。
+  Future<int> getMaxId() async {
+    final query = selectOnly(friends)
+      ..addColumns([friends.id.max()]);
+    final row = await query.getSingleOrNull();
+    final maxId = row?.read(friends.id.max()) ?? 0;
+    return maxId;
+  }
+
+  /// 从服务端同步好友列表（支持增量拉取）。
+  ///
+  /// [sinceId] 本地已存储的最大 id。
+  /// - 传 0 时全量同步：清空本地好友表再插入服务端返回的数据。
+  /// - 传 >0 时增量同步：仅 upsert 服务端返回的新记录，保留本地已有数据。
+  ///
+  /// 同时将好友的资料（name、avatar_url、email 等）写入 [UserProfiles] 表。
+  Future<void> syncFromServer(
+    List<Map<String, dynamic>> list, {
+    int sinceId = 0,
+  }) async {
     await batch((batch) {
-      batch.deleteAll(friends);
-      batch.insertAll(friends, list, mode: InsertMode.insertOrReplace);
+      // 首次拉取时清空好友表
+      if (sinceId == 0) {
+        batch.deleteAll(friends);
+      }
+
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      for (final item in list) {
+        final userId = item['friend_id'] as String? ?? '';
+        if (userId.isEmpty) continue;
+
+        final alias = item['alias'] as String?;
+        final groupName = item['group_name'] as String? ?? '我的好友';
+        final status = item['status'] as int? ?? 1;
+        final source = item['source'] as String?;
+        final id = _parseInt(item['id']);
+        final createTime = _parseTime(item['created_time'] as String?) ?? now;
+
+        batch.insert(
+          friends,
+          FriendsCompanion.insert(
+            userId: userId,
+            alias: Value(alias),
+            groupName: Value(groupName),
+            status: Value(status),
+            source: Value(source),
+            id: Value(id),
+            createTime: createTime,
+            updateTime: now,
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+
+        // 将好友的资料写入 user_profiles
+        batch.insert(
+          userProfiles,
+          UserProfilesCompanion.insert(
+            userId: userId,
+            name: Value(item['name'] as String?),
+            alias: Value(item['alias'] as String?),
+            avatarUrl: Value(item['avatar_url'] as String?),
+            email: Value(item['email'] as String?),
+            region: Value(item['region'] as String?),
+            gender: Value(item['gender'] as int? ?? 0),
+            isSelf: const Value(false),
+            createTime: now,
+            updateTime: now,
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+      }
     });
+  }
+
+  /// 解析服务端返回的 id 字段（兼容 int 和 String 类型）。
+  int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  /// 解析服务端返回的时间字符串（"2026-06-21 19:21:31"）为毫秒时间戳。
+  int? _parseTime(String? timeStr) {
+    if (timeStr == null || timeStr.isEmpty) return null;
+    return DateTime.tryParse(timeStr)?.millisecondsSinceEpoch;
   }
 
   /// 按分组获取好友列表。
@@ -53,18 +137,18 @@ class FriendDao extends DatabaseAccessor<AppDatabase> with _$FriendDaoMixin {
     }).watch();
   }
 
-  /// 更新备注名。
-  Future<void> updateRemark(String userId, String remark) async {
+  /// 更新别名（备注）。
+  Future<void> updateAlias(String userId, String alias) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     await (update(friends)..where((f) => f.userId.equals(userId)))
-        .write(FriendsCompanion(remark: Value(remark), updatedAt: Value(now)));
+        .write(FriendsCompanion(alias: Value(alias), updateTime: Value(now)));
   }
 
   /// 更新好友状态（拉黑/取消拉黑）。
   Future<void> updateStatus(String userId, int status) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     await (update(friends)..where((f) => f.userId.equals(userId)))
-        .write(FriendsCompanion(status: Value(status), updatedAt: Value(now)));
+        .write(FriendsCompanion(status: Value(status), updateTime: Value(now)));
   }
 
   /// 删除好友。

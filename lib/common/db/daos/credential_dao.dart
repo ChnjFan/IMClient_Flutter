@@ -21,6 +21,7 @@ class CredentialDao extends DatabaseAccessor<AppDatabase>
     required String token,
     String areaCode = '+86',
     String? phoneNumber,
+    String? email,
     int loginType = 0,
     Map<String, dynamic>? loginAccount,
     String? serverHost,
@@ -36,6 +37,7 @@ class CredentialDao extends DatabaseAccessor<AppDatabase>
         token: Value(token),
         areaCode: Value(areaCode),
         phoneNumber: Value.absentIfNull(phoneNumber),
+        email: Value.absentIfNull(email),
         loginType: Value(loginType),
         loginAccount: Value.absentIfNull(
           loginAccount != null ? jsonEncode(loginAccount) : null,
@@ -45,8 +47,8 @@ class CredentialDao extends DatabaseAccessor<AppDatabase>
         serverConfig: Value.absentIfNull(
           serverConfig != null ? jsonEncode(serverConfig) : null,
         ),
-        createdAt: Value(now),
-        updatedAt: Value(now),
+        createTime: Value(now),
+        updateTime: Value(now),
       ),
     );
   }
