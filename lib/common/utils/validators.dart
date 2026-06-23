@@ -21,6 +21,14 @@ class Validators {
     return RegExp(r'^\d+$').hasMatch(text.trim());
   }
 
+  /// 将服务端返回的时间字符串（如 "2026-06-21 19:21:31"）转为毫秒时间戳。
+  ///
+  /// 若字符串为 null 或为空，返回 0。
+  static int parseTimeToMs(String? timeStr) {
+    if (timeStr == null || timeStr.isEmpty) return 0;
+    return DateTime.tryParse(timeStr)?.millisecondsSinceEpoch ?? 0;
+  }
+
   /// 识别输入文本类型。
   static InputType identify(String text) {
     final trimmed = text.trim();

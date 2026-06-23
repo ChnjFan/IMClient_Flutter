@@ -2,7 +2,7 @@ class AppStrings {
   AppStrings._();
 
   // App
-  static const String appName = 'IMClient';
+  static const String appName = 'ChiTalk';
 
   // Common
   static const String confirm = '确认';

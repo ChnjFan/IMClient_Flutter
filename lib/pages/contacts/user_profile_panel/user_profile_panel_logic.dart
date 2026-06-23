@@ -3,6 +3,7 @@ import 'package:get/get.dart' hide Value;
 import 'package:imclient_flutter/common/db/database.dart';
 import 'package:imclient_flutter/common/models/user/user_full_info.dart';
 import 'package:imclient_flutter/common/utils/logger.dart';
+import 'package:imclient_flutter/common/utils/validators.dart';
 import 'package:imclient_flutter/core/controller/im_controller.dart';
 
 class UserProfilePanelLogic extends GetxController {
@@ -71,7 +72,7 @@ class UserProfilePanelLogic extends GetxController {
         gender: Value(info.gender ?? 0),
         isSelf: const Value(false),
         updateTime: Value(now),
-        createTime: const Value.absent(),
+        createTime: Value(Validators.parseTimeToMs(info.createTime)),
       ),
     );
 
@@ -83,7 +84,7 @@ class UserProfilePanelLogic extends GetxController {
           alias: Value(info.alias),
           status: Value(info.friendStatus ?? 1),
           updateTime: Value(now),
-          createTime: const Value.absent(),
+          createTime: Value(Validators.parseTimeToMs(info.createTime)),
         ),
       );
     }

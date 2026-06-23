@@ -85,7 +85,7 @@ class AppConfig {
       appVersion = info.version;
       buildNumber = info.buildNumber;
     } catch (_) {
-      appName = 'IMClient';
+      appName = 'ChiTalk';
       appVersion = '1.0.0';
       buildNumber = '1';
     }
