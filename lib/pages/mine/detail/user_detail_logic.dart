@@ -41,8 +41,11 @@ class UserDetailLogic extends GetxController {
     super.onClose();
   }
 
-  /// Sync controllers from userInfo after returning from edit pages.
-  void refreshFromUserInfo() {
+  /// 从服务端重新拉取完整用户信息并同步控制器。
+  ///
+  /// 从编辑页返回后调用，确保所有字段展示最新数据。
+  Future<void> refreshFromUserInfo() async {
+    await _fetchFullInfo();
     final info = imLogic.userInfo.value;
     nameCtrl.text = info.name ?? '';
     emailCtrl.text = info.email ?? '';

@@ -128,4 +128,9 @@ class AppNavigator {
   }) {
     return Get.toNamed(AppRoutes.processApply, arguments: item);
   }
+
+  /// Navigate to setting page.
+  static Future<T?>? startSetting<T extends Object?>() {
+    return Get.toNamed(AppRoutes.setting);
+  }
 }

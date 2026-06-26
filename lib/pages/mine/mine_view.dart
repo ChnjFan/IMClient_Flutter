@@ -4,7 +4,6 @@ import '../../common/styles/colors.dart';
 import '../../common/styles/text_styles.dart';
 import '../../common/res/strings.dart';
 import '../../routes/app_navigator.dart';
-import '../../common/widgets/logout_view.dart';
 import '../../common/widgets/user_info_view.dart';
 import 'mine_logic.dart';
 
@@ -32,9 +31,6 @@ class MinePage extends StatelessWidget {
             // ---- 菜单项 ----
             _buildMenuSection(context),
             const Spacer(),
-            // ---- 退出登录 ----
-            LogoutView(),
-            const SizedBox(height: 48),
           ],
         ),
       ),
@@ -54,9 +50,7 @@ class MinePage extends StatelessWidget {
           _buildMenuItem(
             icon: Icons.settings_outlined,
             title: AppStrings.settings,
-            onTap: () {
-              // TODO: 跳转设置页
-            },
+            onTap: () => AppNavigator.startSetting(),
           ),
           _buildDivider(),
           _buildMenuItem(

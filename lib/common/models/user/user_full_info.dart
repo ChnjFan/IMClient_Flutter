@@ -71,7 +71,7 @@ class UserFullInfo extends UserInfo {
       selfIntro: json['self_intro'],
       privacyFriend: json['privacy_friend'],
       privacyChat: json['privacy_chat'],
-      privacyBlacklist: json['privacy_blacklist'],
+      privacyBlacklist: json['blacklist_switch'],
       createTime: json['create_time'],
       updateTime: json['update_time'],
     );
@@ -89,7 +89,7 @@ class UserFullInfo extends UserInfo {
     data['self_intro'] = selfIntro;
     data['privacy_friend'] = privacyFriend;
     data['privacy_chat'] = privacyChat;
-    data['privacy_blacklist'] = privacyBlacklist;
+    data['blacklist_switch'] = privacyBlacklist;
     data['create_time'] = createTime;
     data['update_time'] = updateTime;
     return data;

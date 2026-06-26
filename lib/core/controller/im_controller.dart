@@ -147,6 +147,9 @@ class IMController extends GetxController {
     String? region,
     String? signature,
     String? selfIntro,
+    int? privacyFriend,
+    int? privacyChat,
+    int? privacyBlacklist,
   }) async {
     // 仅发送 uid 和有值的字段
     final body = <String, dynamic>{'uid': uid};
@@ -159,6 +162,9 @@ class IMController extends GetxController {
     if (region != null) body['region'] = region;
     if (signature != null) body['signature'] = signature;
     if (selfIntro != null) body['self_intro'] = selfIntro;
+    if (privacyFriend != null) body['privacy_friend'] = privacyFriend;
+    if (privacyChat != null) body['privacy_chat'] = privacyChat;
+    if (privacyBlacklist != null) body['blacklist_switch'] = privacyBlacklist;
 
     final resp = await _tcp.sendRequest(
       MsgId.updateUserInfoReq,
@@ -173,16 +179,29 @@ class IMController extends GetxController {
 
     final updated = userInfo.value;
     final updatedFull = userFullInfo.value;
-    if (name != null) updated.name = name;
-    if (email != null) updated.email = email;
-    if (avatarUrl != null) updated.avatarUrl = avatarUrl;
+    if (name != null) {
+      updated.name = name;
+      updatedFull.name = name;
+    }
+    if (email != null) {
+      updated.email = email;
+      updatedFull.email = email;
+    }
+    if (avatarUrl != null) {
+      updated.avatarUrl = avatarUrl;
+      updatedFull.avatarUrl = avatarUrl;
+    }
     if (phone != null) updatedFull.phone = phone;
     if (gender != null) updatedFull.gender = gender;
     if (birthday != null) updatedFull.birthday = birthday;
     if (region != null) updatedFull.region = region;
     if (signature != null) updatedFull.signature = signature;
     if (selfIntro != null) updatedFull.selfIntro = selfIntro;
+    if (privacyFriend != null) updatedFull.privacyFriend = privacyFriend;
+    if (privacyChat != null) updatedFull.privacyChat = privacyChat;
+    if (privacyBlacklist != null) updatedFull.privacyBlacklist = privacyBlacklist;
     userInfo.refresh();
+    userFullInfo.refresh();
     return true;
   }
 

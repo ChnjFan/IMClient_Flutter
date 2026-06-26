@@ -38,6 +38,8 @@ import '../pages/contacts/user_profile_panel/user_profile_panel_binding.dart';
 import '../pages/contacts/user_profile_panel/user_profile_panel_view.dart';
 import '../pages/contacts/user_profile_panel/alias_edit/alias_edit_binding.dart';
 import '../pages/contacts/user_profile_panel/alias_edit/alias_edit_view.dart';
+import '../pages/mine/setting/setting_binding.dart';
+import '../pages/mine/setting/setting_view.dart';
 import '../pages/splash/splash_binding.dart';
 import '../pages/splash/splash_view.dart';
 
@@ -163,6 +165,11 @@ class AppPages {
       name: AppRoutes.processApply,
       page: () => const ProcessApplyPage(),
       binding: ProcessApplyBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.setting,
+      page: () => SettingPage(),
+      binding: SettingBinding(),
     ),
   ];
 }
