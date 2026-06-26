@@ -30,6 +30,11 @@ class UserFullInfo extends UserInfo {
   /// 隐私设置：黑名单设置 0-关闭，1-开启
   int? privacyBlacklist;
 
+  /// 好友设置：是否星标好友 0-否，1-是
+  int? isStarred;
+  /// 好友设置：是否隐藏 0-否，1-是
+  int? isHidden;
+
   String? createTime;
   String? updateTime;
 
@@ -50,6 +55,8 @@ class UserFullInfo extends UserInfo {
     this.privacyFriend,
     this.privacyChat,
     this.privacyBlacklist,
+    this.isStarred,
+    this.isHidden,
     this.createTime,
     this.updateTime,
   });
@@ -72,6 +79,8 @@ class UserFullInfo extends UserInfo {
       privacyFriend: json['privacy_friend'],
       privacyChat: json['privacy_chat'],
       privacyBlacklist: json['blacklist_switch'],
+      isStarred: json['is_star'],
+      isHidden: json['is_hide'],
       createTime: json['create_time'],
       updateTime: json['update_time'],
     );
@@ -90,6 +99,8 @@ class UserFullInfo extends UserInfo {
     data['privacy_friend'] = privacyFriend;
     data['privacy_chat'] = privacyChat;
     data['blacklist_switch'] = privacyBlacklist;
+    data['is_star'] = isStarred;
+    data['is_hide'] = isHidden;
     data['create_time'] = createTime;
     data['update_time'] = updateTime;
     return data;

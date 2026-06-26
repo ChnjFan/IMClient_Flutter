@@ -298,18 +298,24 @@ class IMController extends GetxController {
     return true;
   }
 
-  /// 更新好友信息（备注等）。
-  /// [friendId] 好友的用户 ID，[alias] 新备注名（传 null 表示不修改）。
+  /// 更新好友信息（备注、状态、星标、屏蔽、隐藏等）。
+  /// [friendId] 好友的用户 ID。仅发送非 null 字段。
   /// 返回 `true` 表示操作成功。
   Future<bool> updateFriend({
     required String friendId,
     String? alias,
+    int? status,
+    int? isStarred,
+    int? isHidden,
   }) async {
     final body = <String, dynamic>{
       'uid': userInfo.value.uid,
       'friend_id': friendId,
     };
     if (alias != null) body['alias'] = alias;
+    if (status != null) body['status'] = status;
+    if (isStarred != null) body['is_star'] = isStarred;
+    if (isHidden != null) body['is_hide'] = isHidden;
 
     final resp = await _tcp.sendRequest(
       MsgId.updateFriendReq,
@@ -319,6 +325,22 @@ class IMController extends GetxController {
 
     if (resp == null || !resp.isSuccess) {
       Logger.print('IMController — updateFriend failed: ${resp?.errCode}');
+      return false;
+    }
+    return true;
+  }
+
+  /// 删除好友。
+  /// [friendId] 好友的用户 ID。返回 `true` 表示操作成功。
+  Future<bool> deleteFriend({required String friendId}) async {
+    final resp = await _tcp.sendRequest(
+      MsgId.deleteFriendReq,
+      MsgId.deleteFriendRsp,
+      {'uid': userInfo.value.uid, 'friend_id': friendId},
+    );
+
+    if (resp == null || !resp.isSuccess) {
+      Logger.print('IMController — deleteFriend failed: ${resp?.errCode}');
       return false;
     }
     return true;

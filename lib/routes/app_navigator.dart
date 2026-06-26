@@ -129,6 +129,11 @@ class AppNavigator {
     return Get.toNamed(AppRoutes.processApply, arguments: item);
   }
 
+  /// Navigate to friend setting page.
+  static Future<T?>? startFriendSetting<T extends Object?>() {
+    return Get.toNamed(AppRoutes.friendSetting);
+  }
+
   /// Navigate to setting page.
   static Future<T?>? startSetting<T extends Object?>() {
     return Get.toNamed(AppRoutes.setting);

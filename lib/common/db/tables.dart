@@ -101,6 +101,8 @@ class Friends extends Table {
   TextColumn get source => text().named('source').nullable()();
   IntColumn get createTime => integer().named('create_time')();
   IntColumn get updateTime => integer().named('update_time')();
+  IntColumn get isStarred => integer().named('is_star').withDefault(const Constant(0))();
+  IntColumn get isHidden => integer().named('is_hide').withDefault(const Constant(0))();
 
   @override
   Set<Column> get primaryKey => {userId};

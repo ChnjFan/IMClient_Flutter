@@ -4,6 +4,7 @@ import 'package:imclient_flutter/common/db/database.dart';
 import 'package:imclient_flutter/common/models/user/user_full_info.dart';
 import 'package:imclient_flutter/common/utils/logger.dart';
 import 'package:imclient_flutter/common/utils/time_utils.dart';
+import 'package:imclient_flutter/component/toast.dart';
 import 'package:imclient_flutter/core/controller/im_controller.dart';
 import 'package:imclient_flutter/routes/app_navigator.dart';
 
@@ -116,4 +117,98 @@ class UserProfilePanelLogic extends GetxController {
       userFullInfo.refresh();
     }
   }
+
+  // ---- 好友设置操作 ----
+
+  Future<void> toggleStar() async {
+    final user = userFullInfo.value;
+    if (user == null) return;
+    final uid = user.uid ?? '';
+    final newVal = (user.isStarred ?? 0) == 1 ? 0 : 1;
+    final success = await _imController.updateFriend(friendId: uid, isStarred: newVal);
+    if (success) {
+      user.isStarred = newVal;
+      _updateLocalFriendField(uid, isStarred: newVal);
+      userFullInfo.refresh();
+    } else {
+      AppToast.error('操作失败');
+    }
+  }
+
+  Future<void> toggleBlock() async {
+    final user = userFullInfo.value;
+    if (user == null) return;
+    final uid = user.uid ?? '';
+    final isBlocked = (user.friendStatus ?? 0) == 4;
+    final newStatus = isBlocked ? 1 : 4;
+    final success = await _imController.updateFriend(friendId: uid, status: newStatus);
+    if (success) {
+      user.friendStatus = newStatus;
+      await _db.friendDao.updateStatus(uid, newStatus);
+      userFullInfo.refresh();
+    } else {
+      AppToast.error('操作失败');
+    }
+  }
+
+  Future<void> toggleHidden() async {
+    final user = userFullInfo.value;
+    if (user == null) return;
+    final uid = user.uid ?? '';
+    final newVal = (user.isHidden ?? 0) == 1 ? 0 : 1;
+    final success = await _imController.updateFriend(friendId: uid, isHidden: newVal);
+    if (success) {
+      user.isHidden = newVal;
+      _updateLocalFriendField(uid, isHidden: newVal);
+      userFullInfo.refresh();
+    } else {
+      AppToast.error('操作失败');
+    }
+  }
+
+  Future<void> toggleBlacklist() async {
+    final user = userFullInfo.value;
+    if (user == null) return;
+    final uid = user.uid ?? '';
+    final isBlacklisted = (user.friendStatus ?? 0) == 2;
+    final newStatus = isBlacklisted ? 1 : 2;
+    final success = await _imController.updateFriend(friendId: uid, status: newStatus);
+    if (success) {
+      user.friendStatus = newStatus;
+      await _db.friendDao.updateStatus(uid, newStatus);
+      userFullInfo.refresh();
+    } else {
+      AppToast.error('操作失败');
+    }
+  }
+
+  Future<void> deleteContact() async {
+    final user = userFullInfo.value;
+    if (user == null) return;
+    final uid = user.uid ?? '';
+    final success = await _imController.deleteFriend(friendId: uid);
+    if (success) {
+      await _db.friendDao.deleteByUserId(uid);
+      AppToast.success('已删除联系人');
+      Get.back();
+    } else {
+      AppToast.error('删除失败');
+    }
+  }
+
+  /// 更新本地 Friends 表中的单个字段。
+  Future<void> _updateLocalFriendField(
+    String userId, {
+    int? isStarred,
+    int? isHidden,
+  }) async {
+    if (isStarred != null) await _db.friendDao.updateIsStarred(userId, isStarred);
+    if (isHidden != null) await _db.friendDao.updateIsHidden(userId, isHidden);
+  }
+
+  // ---- getters ----
+
+  bool get isFriend => (userFullInfo.value?.friendStatus ?? 0) == 1;
+
+  bool get isBlacklisted => (userFullInfo.value?.friendStatus ?? 0) == 2;
 }

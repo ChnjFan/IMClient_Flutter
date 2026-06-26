@@ -151,6 +151,20 @@ class FriendDao extends DatabaseAccessor<AppDatabase> with _$FriendDaoMixin {
         .write(FriendsCompanion(status: Value(status), updateTime: Value(now)));
   }
 
+  /// 更新星标好友。
+  Future<void> updateIsStarred(String userId, int isStarred) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await (update(friends)..where((f) => f.userId.equals(userId)))
+        .write(FriendsCompanion(isStarred: Value(isStarred), updateTime: Value(now)));
+  }
+
+  /// 更新隐藏好友。
+  Future<void> updateIsHidden(String userId, int isHidden) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await (update(friends)..where((f) => f.userId.equals(userId)))
+        .write(FriendsCompanion(isHidden: Value(isHidden), updateTime: Value(now)));
+  }
+
   /// 删除好友。
   Future<void> deleteByUserId(String userId) =>
       (delete(friends)..where((f) => f.userId.equals(userId))).go();

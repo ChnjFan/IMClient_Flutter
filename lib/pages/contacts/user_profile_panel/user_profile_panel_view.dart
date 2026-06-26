@@ -20,6 +20,15 @@ class UserProfilePanelPage extends StatelessWidget {
           final user = logic.userFullInfo.value;
           return Text(user?.getShowName() ?? '用户详情');
         }),
+        actions: [
+          Obx(() {
+            if (!logic.isFriend) return const SizedBox.shrink();
+            return IconButton(
+              icon: const Icon(Icons.more_horiz, color: AppColors.c_0C1C33),
+              onPressed: () => AppNavigator.startFriendSetting(),
+            );
+          }),
+        ],
       ),
       body: Obx(() {
         if (logic.isLoading.value) {

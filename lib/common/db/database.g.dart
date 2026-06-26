@@ -2594,6 +2594,30 @@ class $FriendsTable extends Friends with TableInfo<$FriendsTable, Friend> {
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _isStarredMeta = const VerificationMeta(
+    'isStarred',
+  );
+  @override
+  late final GeneratedColumn<int> isStarred = GeneratedColumn<int>(
+    'is_star',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _isHiddenMeta = const VerificationMeta(
+    'isHidden',
+  );
+  @override
+  late final GeneratedColumn<int> isHidden = GeneratedColumn<int>(
+    'is_hide',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2604,6 +2628,8 @@ class $FriendsTable extends Friends with TableInfo<$FriendsTable, Friend> {
     source,
     createTime,
     updateTime,
+    isStarred,
+    isHidden,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2668,6 +2694,18 @@ class $FriendsTable extends Friends with TableInfo<$FriendsTable, Friend> {
     } else if (isInserting) {
       context.missing(_updateTimeMeta);
     }
+    if (data.containsKey('is_star')) {
+      context.handle(
+        _isStarredMeta,
+        isStarred.isAcceptableOrUnknown(data['is_star']!, _isStarredMeta),
+      );
+    }
+    if (data.containsKey('is_hide')) {
+      context.handle(
+        _isHiddenMeta,
+        isHidden.isAcceptableOrUnknown(data['is_hide']!, _isHiddenMeta),
+      );
+    }
     return context;
   }
 
@@ -2709,6 +2747,14 @@ class $FriendsTable extends Friends with TableInfo<$FriendsTable, Friend> {
         DriftSqlType.int,
         data['${effectivePrefix}update_time'],
       )!,
+      isStarred: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}is_star'],
+      )!,
+      isHidden: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}is_hide'],
+      )!,
     );
   }
 
@@ -2727,6 +2773,8 @@ class Friend extends DataClass implements Insertable<Friend> {
   final String? source;
   final int createTime;
   final int updateTime;
+  final int isStarred;
+  final int isHidden;
   const Friend({
     this.id,
     required this.userId,
@@ -2736,6 +2784,8 @@ class Friend extends DataClass implements Insertable<Friend> {
     this.source,
     required this.createTime,
     required this.updateTime,
+    required this.isStarred,
+    required this.isHidden,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2754,6 +2804,8 @@ class Friend extends DataClass implements Insertable<Friend> {
     }
     map['create_time'] = Variable<int>(createTime);
     map['update_time'] = Variable<int>(updateTime);
+    map['is_star'] = Variable<int>(isStarred);
+    map['is_hide'] = Variable<int>(isHidden);
     return map;
   }
 
@@ -2771,6 +2823,8 @@ class Friend extends DataClass implements Insertable<Friend> {
           : Value(source),
       createTime: Value(createTime),
       updateTime: Value(updateTime),
+      isStarred: Value(isStarred),
+      isHidden: Value(isHidden),
     );
   }
 
@@ -2788,6 +2842,8 @@ class Friend extends DataClass implements Insertable<Friend> {
       source: serializer.fromJson<String?>(json['source']),
       createTime: serializer.fromJson<int>(json['createTime']),
       updateTime: serializer.fromJson<int>(json['updateTime']),
+      isStarred: serializer.fromJson<int>(json['isStarred']),
+      isHidden: serializer.fromJson<int>(json['isHidden']),
     );
   }
   @override
@@ -2802,6 +2858,8 @@ class Friend extends DataClass implements Insertable<Friend> {
       'source': serializer.toJson<String?>(source),
       'createTime': serializer.toJson<int>(createTime),
       'updateTime': serializer.toJson<int>(updateTime),
+      'isStarred': serializer.toJson<int>(isStarred),
+      'isHidden': serializer.toJson<int>(isHidden),
     };
   }
 
@@ -2814,6 +2872,8 @@ class Friend extends DataClass implements Insertable<Friend> {
     Value<String?> source = const Value.absent(),
     int? createTime,
     int? updateTime,
+    int? isStarred,
+    int? isHidden,
   }) => Friend(
     id: id.present ? id.value : this.id,
     userId: userId ?? this.userId,
@@ -2823,6 +2883,8 @@ class Friend extends DataClass implements Insertable<Friend> {
     source: source.present ? source.value : this.source,
     createTime: createTime ?? this.createTime,
     updateTime: updateTime ?? this.updateTime,
+    isStarred: isStarred ?? this.isStarred,
+    isHidden: isHidden ?? this.isHidden,
   );
   Friend copyWithCompanion(FriendsCompanion data) {
     return Friend(
@@ -2838,6 +2900,8 @@ class Friend extends DataClass implements Insertable<Friend> {
       updateTime: data.updateTime.present
           ? data.updateTime.value
           : this.updateTime,
+      isStarred: data.isStarred.present ? data.isStarred.value : this.isStarred,
+      isHidden: data.isHidden.present ? data.isHidden.value : this.isHidden,
     );
   }
 
@@ -2851,7 +2915,9 @@ class Friend extends DataClass implements Insertable<Friend> {
           ..write('status: $status, ')
           ..write('source: $source, ')
           ..write('createTime: $createTime, ')
-          ..write('updateTime: $updateTime')
+          ..write('updateTime: $updateTime, ')
+          ..write('isStarred: $isStarred, ')
+          ..write('isHidden: $isHidden')
           ..write(')'))
         .toString();
   }
@@ -2866,6 +2932,8 @@ class Friend extends DataClass implements Insertable<Friend> {
     source,
     createTime,
     updateTime,
+    isStarred,
+    isHidden,
   );
   @override
   bool operator ==(Object other) =>
@@ -2878,7 +2946,9 @@ class Friend extends DataClass implements Insertable<Friend> {
           other.status == this.status &&
           other.source == this.source &&
           other.createTime == this.createTime &&
-          other.updateTime == this.updateTime);
+          other.updateTime == this.updateTime &&
+          other.isStarred == this.isStarred &&
+          other.isHidden == this.isHidden);
 }
 
 class FriendsCompanion extends UpdateCompanion<Friend> {
@@ -2890,6 +2960,8 @@ class FriendsCompanion extends UpdateCompanion<Friend> {
   final Value<String?> source;
   final Value<int> createTime;
   final Value<int> updateTime;
+  final Value<int> isStarred;
+  final Value<int> isHidden;
   final Value<int> rowid;
   const FriendsCompanion({
     this.id = const Value.absent(),
@@ -2900,6 +2972,8 @@ class FriendsCompanion extends UpdateCompanion<Friend> {
     this.source = const Value.absent(),
     this.createTime = const Value.absent(),
     this.updateTime = const Value.absent(),
+    this.isStarred = const Value.absent(),
+    this.isHidden = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   FriendsCompanion.insert({
@@ -2911,6 +2985,8 @@ class FriendsCompanion extends UpdateCompanion<Friend> {
     this.source = const Value.absent(),
     required int createTime,
     required int updateTime,
+    this.isStarred = const Value.absent(),
+    this.isHidden = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : userId = Value(userId),
        createTime = Value(createTime),
@@ -2924,6 +3000,8 @@ class FriendsCompanion extends UpdateCompanion<Friend> {
     Expression<String>? source,
     Expression<int>? createTime,
     Expression<int>? updateTime,
+    Expression<int>? isStarred,
+    Expression<int>? isHidden,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2935,6 +3013,8 @@ class FriendsCompanion extends UpdateCompanion<Friend> {
       if (source != null) 'source': source,
       if (createTime != null) 'create_time': createTime,
       if (updateTime != null) 'update_time': updateTime,
+      if (isStarred != null) 'is_star': isStarred,
+      if (isHidden != null) 'is_hide': isHidden,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2948,6 +3028,8 @@ class FriendsCompanion extends UpdateCompanion<Friend> {
     Value<String?>? source,
     Value<int>? createTime,
     Value<int>? updateTime,
+    Value<int>? isStarred,
+    Value<int>? isHidden,
     Value<int>? rowid,
   }) {
     return FriendsCompanion(
@@ -2959,6 +3041,8 @@ class FriendsCompanion extends UpdateCompanion<Friend> {
       source: source ?? this.source,
       createTime: createTime ?? this.createTime,
       updateTime: updateTime ?? this.updateTime,
+      isStarred: isStarred ?? this.isStarred,
+      isHidden: isHidden ?? this.isHidden,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2990,6 +3074,12 @@ class FriendsCompanion extends UpdateCompanion<Friend> {
     if (updateTime.present) {
       map['update_time'] = Variable<int>(updateTime.value);
     }
+    if (isStarred.present) {
+      map['is_star'] = Variable<int>(isStarred.value);
+    }
+    if (isHidden.present) {
+      map['is_hide'] = Variable<int>(isHidden.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3007,6 +3097,8 @@ class FriendsCompanion extends UpdateCompanion<Friend> {
           ..write('source: $source, ')
           ..write('createTime: $createTime, ')
           ..write('updateTime: $updateTime, ')
+          ..write('isStarred: $isStarred, ')
+          ..write('isHidden: $isHidden, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4944,6 +5036,8 @@ typedef $$FriendsTableCreateCompanionBuilder =
       Value<String?> source,
       required int createTime,
       required int updateTime,
+      Value<int> isStarred,
+      Value<int> isHidden,
       Value<int> rowid,
     });
 typedef $$FriendsTableUpdateCompanionBuilder =
@@ -4956,6 +5050,8 @@ typedef $$FriendsTableUpdateCompanionBuilder =
       Value<String?> source,
       Value<int> createTime,
       Value<int> updateTime,
+      Value<int> isStarred,
+      Value<int> isHidden,
       Value<int> rowid,
     });
 
@@ -5005,6 +5101,16 @@ class $$FriendsTableFilterComposer
 
   ColumnFilters<int> get updateTime => $composableBuilder(
     column: $table.updateTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get isStarred => $composableBuilder(
+    column: $table.isStarred,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get isHidden => $composableBuilder(
+    column: $table.isHidden,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -5057,6 +5163,16 @@ class $$FriendsTableOrderingComposer
     column: $table.updateTime,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get isStarred => $composableBuilder(
+    column: $table.isStarred,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get isHidden => $composableBuilder(
+    column: $table.isHidden,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$FriendsTableAnnotationComposer
@@ -5095,6 +5211,12 @@ class $$FriendsTableAnnotationComposer
     column: $table.updateTime,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get isStarred =>
+      $composableBuilder(column: $table.isStarred, builder: (column) => column);
+
+  GeneratedColumn<int> get isHidden =>
+      $composableBuilder(column: $table.isHidden, builder: (column) => column);
 }
 
 class $$FriendsTableTableManager
@@ -5133,6 +5255,8 @@ class $$FriendsTableTableManager
                 Value<String?> source = const Value.absent(),
                 Value<int> createTime = const Value.absent(),
                 Value<int> updateTime = const Value.absent(),
+                Value<int> isStarred = const Value.absent(),
+                Value<int> isHidden = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FriendsCompanion(
                 id: id,
@@ -5143,6 +5267,8 @@ class $$FriendsTableTableManager
                 source: source,
                 createTime: createTime,
                 updateTime: updateTime,
+                isStarred: isStarred,
+                isHidden: isHidden,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -5155,6 +5281,8 @@ class $$FriendsTableTableManager
                 Value<String?> source = const Value.absent(),
                 required int createTime,
                 required int updateTime,
+                Value<int> isStarred = const Value.absent(),
+                Value<int> isHidden = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => FriendsCompanion.insert(
                 id: id,
@@ -5165,6 +5293,8 @@ class $$FriendsTableTableManager
                 source: source,
                 createTime: createTime,
                 updateTime: updateTime,
+                isStarred: isStarred,
+                isHidden: isHidden,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
