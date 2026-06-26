@@ -19,6 +19,19 @@ class UserDetailLogic extends GetxController {
     final info = imLogic.userInfo.value;
     nameCtrl = TextEditingController(text: info.name ?? '');
     emailCtrl = TextEditingController(text: info.email ?? '');
+    _fetchFullInfo();
+  }
+
+  /// 从服务端拉取用户完整信息，保证每次进入页面都有最新数据。
+  Future<void> _fetchFullInfo() async {
+    final uid = imLogic.userInfo.value.uid;
+    if (uid == null || uid.isEmpty) return;
+    try {
+      final freshInfo = await imLogic.getUserFullInfo(uid: uid, from: uid);
+      imLogic.userFullInfo.value = freshInfo;
+    } catch (_) {
+      // 拉取失败则使用 IMController 中已有的缓存
+    }
   }
 
   @override
@@ -42,12 +55,6 @@ class UserDetailLogic extends GetxController {
       case 2: return '女';
       default: return '未设置';
     }
-  }
-
-  /// 格式化时间字符串展示
-  String formatTime(String? timeStr) {
-    if (timeStr == null || timeStr.isEmpty) return '未知';
-    return timeStr;
   }
 
   /// 更新用户字段（本地 + 服务端）

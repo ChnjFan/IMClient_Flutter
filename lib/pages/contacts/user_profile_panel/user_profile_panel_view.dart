@@ -135,13 +135,13 @@ class UserProfilePanelPage extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _buildInfoRow('昵称', user.name ?? '未设置'),
-          _divider(),
+          if (user.friendStatus == 1) ...[
+            _buildInfoRow('备注', user.alias ?? '未设置', editable: true, onTap: () => logic.goAliasEdit()),
+            _divider(),
+          ],
           _buildInfoRow('邮箱', user.email ?? '未设置'),
           _divider(),
           _buildInfoRow('手机号', user.phone ?? '未设置'),
-          _divider(),
-          _buildInfoRow('备注', user.alias ?? '未设置'),
           _divider(),
           _buildInfoRow('个性签名', user.signature ?? '未设置'),
           _divider(),
@@ -151,8 +151,8 @@ class UserProfilePanelPage extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Container(
+  Widget _buildInfoRow(String label, String value, {bool editable = false, VoidCallback? onTap}) {
+    final row = Container(
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -169,9 +169,17 @@ class UserProfilePanelPage extends StatelessWidget {
               style: const TextStyle(fontSize: 14, color: AppColors.c_8E9AB0),
             ),
           ),
+          if (editable) ...[
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, size: 20, color: AppColors.c_8E9AB0),
+          ],
         ],
       ),
     );
+    if (editable && onTap != null) {
+      return InkWell(onTap: onTap, child: row);
+    }
+    return row;
   }
 
   Widget _buildActionButton(UserFullInfo user) {

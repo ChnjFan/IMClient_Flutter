@@ -99,6 +99,17 @@ class AppNavigator {
     return Get.toNamed(AppRoutes.userProfilePanel, arguments: userInfo);
   }
 
+  /// Navigate to alias edit page (修改备注).
+  static Future<T?>? startAliasEdit<T extends Object?>({
+    required String friendId,
+    required String alias,
+  }) {
+    return Get.toNamed(
+      AppRoutes.aliasEdit,
+      arguments: {'friendId': friendId, 'alias': alias},
+    );
+  }
+
   /// Navigate to apply friend page.
   static Future<T?>? startApplyFriend<T extends Object?>({
     required dynamic userInfo,

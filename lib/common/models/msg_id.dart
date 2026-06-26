@@ -26,6 +26,8 @@ class MsgId {
   static const int getFriendApplyRsp = 2010;
   static const int getFriendListReq = 2011;
   static const int getFriendListRsp = 2012;
+  static const int updateFriendReq = 2013;
+  static const int updateFriendRsp = 2014;
 
   // ---- 用户资料消息 ----
   static const int updateUserInfoReq = 2101;

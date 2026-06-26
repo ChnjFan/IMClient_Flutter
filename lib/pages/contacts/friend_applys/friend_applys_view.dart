@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../common/db/daos/friend_request_dao.dart';
 import '../../../common/styles/colors.dart';
 import '../../../common/styles/text_styles.dart';
+import '../../../common/utils/time_utils.dart';
 import '../../../routes/app_navigator.dart';
 import 'friend_applys_logic.dart';
 
@@ -82,7 +83,7 @@ class FriendApplysPage extends StatelessWidget {
     final name = profile?.name ?? uid;
     final avatarUrl = profile?.avatarUrl ?? '';
     final message = item.request.message ?? '';
-    final timeStr = _formatTime(item.request.createTime);
+    final timeStr = TimeUtils.formatRelativeTime(item.request.createTime);
 
     return InkWell(
       onTap: () => AppNavigator.startProcessApply(item: item),
@@ -120,14 +121,20 @@ class FriendApplysPage extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Flexible(
-                          child: Text(
-                            name,
-                            style: AppTextStyles.ts_0C1C33_14sp,
-                            overflow: TextOverflow.ellipsis,
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  name,
+                                  style: AppTextStyles.ts_0C1C33_14sp,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              _buildGenderIcon(profile?.gender),
+                            ],
                           ),
                         ),
-                        _buildGenderIcon(profile?.gender),
                         Text(
                           timeStr,
                           style: AppTextStyles.ts_8E9AB0_12sp,
@@ -168,7 +175,7 @@ class FriendApplysPage extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(left: 4, right: 8),
       child: Icon(
-        gender == 1 ? Icons.male : Icons.female,
+        gender == 1 ? Icons.male_rounded : Icons.female_rounded,
         size: 16,
         color: gender == 1 ? AppColors.c_0089FF : const Color(0xFFFF6B9D),
       ),
@@ -212,18 +219,4 @@ class FriendApplysPage extends StatelessWidget {
     );
   }
 
-  /// 将毫秒时间戳格式化为展示文本。
-  String _formatTime(int timestampMs) {
-    if (timestampMs <= 0) return '';
-    final now = DateTime.now();
-    final dt = DateTime.fromMillisecondsSinceEpoch(timestampMs);
-    final diff = now.difference(dt);
-
-    if (diff.inMinutes < 1) return '刚刚';
-    if (diff.inHours < 1) return '${diff.inMinutes}分钟前';
-    if (diff.inDays < 1) return '${diff.inHours}小时前';
-    if (diff.inDays < 30) return '${diff.inDays}天前';
-
-    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
-  }
 }

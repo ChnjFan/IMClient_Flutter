@@ -215,7 +215,7 @@ class IMController extends GetxController {
     final resp = await _tcp.sendRequest(
       MsgId.addFriendReq,
       MsgId.addFriendRsp,
-      {'uid': userInfo.value.uid, 'friend_id': uid, 'msg': reason},
+      {'uid': userInfo.value.uid, 'friend_id': uid, 'message': reason},
     );
 
     if (resp == null || !resp.isSuccess) {
@@ -227,13 +227,13 @@ class IMController extends GetxController {
 
   /// 拉取好友申请列表（支持增量拉取）。
   ///
-  /// [sinceId] 本地已存储的最大申请 id，服务端只返回 id > sinceId 的新记录。
-  /// 传 0 或 null 时拉取全量。
-  Future<List<Map<String, dynamic>>> fetchFriendApplys({int sinceId = 0}) async {
+  /// [sinceUpdateTime] 本地已存储的最大 updateTime 字符串，服务端只返回在此之后更新的记录。
+  /// 传空字符串时拉取全量。
+  Future<List<Map<String, dynamic>>> fetchFriendApplys({String sinceUpdateTime = ''}) async {
     final resp = await _tcp.sendRequest(
       MsgId.getFriendApplyReq,
       MsgId.getFriendApplyRsp,
-      {'uid': userInfo.value.uid, 'since_id': sinceId},
+      {'uid': userInfo.value.uid, 'since_update_time': sinceUpdateTime},
     );
 
     if (resp == null || !resp.isSuccess) {
@@ -279,15 +279,41 @@ class IMController extends GetxController {
     return true;
   }
 
+  /// 更新好友信息（备注等）。
+  /// [friendId] 好友的用户 ID，[alias] 新备注名（传 null 表示不修改）。
+  /// 返回 `true` 表示操作成功。
+  Future<bool> updateFriend({
+    required String friendId,
+    String? alias,
+  }) async {
+    final body = <String, dynamic>{
+      'uid': userInfo.value.uid,
+      'friend_id': friendId,
+    };
+    if (alias != null) body['alias'] = alias;
+
+    final resp = await _tcp.sendRequest(
+      MsgId.updateFriendReq,
+      MsgId.updateFriendRsp,
+      body,
+    );
+
+    if (resp == null || !resp.isSuccess) {
+      Logger.print('IMController — updateFriend failed: ${resp?.errCode}');
+      return false;
+    }
+    return true;
+  }
+
   /// 拉取好友列表（支持增量拉取）。
   ///
-  /// [sinceId] 本地已存储的最大 id，服务端只返回
-  /// id > sinceId 的新好友记录。传 0 时拉取全量。
-  Future<List<Map<String, dynamic>>> fetchFriendList({int sinceId = 0}) async {
+  /// [sinceUpdateTime] 本地已存储的最大 updateTime 字符串，服务端只返回在此之后更新的记录。
+  /// 传空字符串时拉取全量。
+  Future<List<Map<String, dynamic>>> fetchFriendList({String sinceUpdateTime = ''}) async {
     final resp = await _tcp.sendRequest(
       MsgId.getFriendListReq,
       MsgId.getFriendListRsp,
-      {'uid': userInfo.value.uid, 'since_id': sinceId},
+      {'uid': userInfo.value.uid, 'since_update_time': sinceUpdateTime},
     );
 
     if (resp == null || !resp.isSuccess) {
@@ -369,16 +395,26 @@ class IMController extends GetxController {
       AppNavigator.startLogin();
   }
 
-  /// 登出：断开 TCP 并清除状态。
+  /// 登出：断开 TCP、清除状态并清空本地数据库（调试用）。
   Future<void> logout() async {
     Logger.print('IMController — logging out');
     _tcp.disconnect();
     _isInitialized = false;
     imSdkStatus(IMSdkStatus.notInitialized);
-    // 清除数据库中的登录凭证
+    // 清空本地数据库所有数据
     try {
-      await Get.find<AppDatabase>().credentialDao.clear();
-    } catch (_) {}
+      final db = Get.find<AppDatabase>();
+      await db.credentialDao.clear();
+      await db.userProfileDao.clear();
+      await db.friendDao.clear();
+      await db.friendRequestDao.clear();
+      await db.conversationDao.clear();
+      await db.messageDao.clear();
+      await db.settingsDao.clear();
+      Logger.print('IMController — all database tables cleared');
+    } catch (e) {
+      Logger.print('IMController — failed to clear database: $e');
+    }
   }
 
   void imSdkStatus(IMSdkStatus status, {int? progress, bool reInstall = false}) {

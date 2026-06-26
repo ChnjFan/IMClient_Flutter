@@ -40,4 +40,7 @@ class UserProfileDao extends DatabaseAccessor<AppDatabase>
   /// 按 userId 删除。
   Future<void> deleteByUserId(String userId) =>
       (delete(userProfiles)..where((u) => u.userId.equals(userId))).go();
+
+  /// 清空所有用户资料（调试用）。
+  Future<void> clear() => delete(userProfiles).go();
 }

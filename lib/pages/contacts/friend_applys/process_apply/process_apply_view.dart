@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../common/styles/colors.dart';
 import '../../../../common/styles/text_styles.dart';
+import '../../../../common/utils/time_utils.dart';
 import 'process_apply_logic.dart';
 
 class ProcessApplyPage extends StatelessWidget {
@@ -16,7 +17,7 @@ class ProcessApplyPage extends StatelessWidget {
     final name = profile?.name ?? uid;
     final avatarUrl = profile?.avatarUrl ?? '';
     final message = item.request.message ?? '';
-    final timeStr = _formatTime(item.request.createTime);
+    final timeStr = TimeUtils.formatRelativeTime(item.request.createTime);
 
     return Scaffold(
       backgroundColor: AppColors.c_F0F2F6,
@@ -161,7 +162,7 @@ class ProcessApplyPage extends StatelessWidget {
         Expanded(
           child: Text(
             value.isNotEmpty ? value : '—',
-            style: AppTextStyles.ts_0C1C33_14sp,
+            style: AppTextStyles.ts_8E9AB0_12sp,
           ),
         ),
       ],
@@ -313,18 +314,4 @@ class ProcessApplyPage extends StatelessWidget {
     );
   }
 
-  /// 将毫秒时间戳格式化为展示文本。
-  String _formatTime(int timestampMs) {
-    if (timestampMs <= 0) return '';
-    final now = DateTime.now();
-    final dt = DateTime.fromMillisecondsSinceEpoch(timestampMs);
-    final diff = now.difference(dt);
-
-    if (diff.inMinutes < 1) return '刚刚';
-    if (diff.inHours < 1) return '${diff.inMinutes}分钟前';
-    if (diff.inDays < 1) return '${diff.inHours}小时前';
-    if (diff.inDays < 30) return '${diff.inDays}天前';
-
-    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
-  }
 }

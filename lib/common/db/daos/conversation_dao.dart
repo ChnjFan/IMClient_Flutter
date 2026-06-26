@@ -50,4 +50,7 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
       (delete(conversations)
             ..where((c) => c.conversationId.equals(conversationId)))
           .go();
+
+  /// 清空所有会话（调试用）。
+  Future<void> clear() => delete(conversations).go();
 }

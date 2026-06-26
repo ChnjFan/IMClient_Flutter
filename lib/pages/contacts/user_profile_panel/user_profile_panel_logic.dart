@@ -3,8 +3,9 @@ import 'package:get/get.dart' hide Value;
 import 'package:imclient_flutter/common/db/database.dart';
 import 'package:imclient_flutter/common/models/user/user_full_info.dart';
 import 'package:imclient_flutter/common/utils/logger.dart';
-import 'package:imclient_flutter/common/utils/validators.dart';
+import 'package:imclient_flutter/common/utils/time_utils.dart';
 import 'package:imclient_flutter/core/controller/im_controller.dart';
+import 'package:imclient_flutter/routes/app_navigator.dart';
 
 class UserProfilePanelLogic extends GetxController {
   final IMController _imController = Get.find<IMController>();
@@ -20,9 +21,18 @@ class UserProfilePanelLogic extends GetxController {
     _loadUserProfile();
   }
 
-  /// 加载用户详细信息：从服务端查询并更新本地数据库。
+  /// 加载用户详细信息：优先使用传入的 [UserFullInfo]，否则从服务端查询。
   Future<void> _loadUserProfile() async {
     final args = Get.arguments;
+
+    // 如果调用方已经传入了完整的 UserFullInfo，直接使用，避免重复请求
+    if (args is UserFullInfo) {
+      userFullInfo.value = args;
+      isLoading.value = false;
+      await _syncToLocalDB(args);
+      return;
+    }
+
     final String? uid = _extractUid(args);
 
     if (uid == null || uid.isEmpty) {
@@ -72,7 +82,7 @@ class UserProfilePanelLogic extends GetxController {
         gender: Value(info.gender ?? 0),
         isSelf: const Value(false),
         updateTime: Value(now),
-        createTime: Value(Validators.parseTimeToMs(info.createTime)),
+        createTime: Value(TimeUtils.parseServerTime(info.createTime) ?? 0),
       ),
     );
 
@@ -84,9 +94,26 @@ class UserProfilePanelLogic extends GetxController {
           alias: Value(info.alias),
           status: Value(info.friendStatus ?? 1),
           updateTime: Value(now),
-          createTime: Value(Validators.parseTimeToMs(info.createTime)),
+          createTime: Value(TimeUtils.parseServerTime(info.createTime) ?? 0),
         ),
       );
+    }
+  }
+
+  /// 跳转到备注编辑页面，返回后更新本地状态。
+  Future<void> goAliasEdit() async {
+    final user = userFullInfo.value;
+    if (user == null) return;
+
+    final uid = user.uid ?? '';
+    final newAlias = await AppNavigator.startAliasEdit(
+      friendId: uid,
+      alias: user.alias ?? '',
+    );
+
+    if (newAlias is String && newAlias.isNotEmpty && newAlias != user.alias) {
+      user.alias = newAlias;
+      userFullInfo.refresh();
     }
   }
 }

@@ -36,6 +36,8 @@ import '../pages/contacts/friend_applys/process_apply/process_apply_binding.dart
 import '../pages/contacts/friend_applys/process_apply/process_apply_view.dart';
 import '../pages/contacts/user_profile_panel/user_profile_panel_binding.dart';
 import '../pages/contacts/user_profile_panel/user_profile_panel_view.dart';
+import '../pages/contacts/user_profile_panel/alias_edit/alias_edit_binding.dart';
+import '../pages/contacts/user_profile_panel/alias_edit/alias_edit_view.dart';
 import '../pages/splash/splash_binding.dart';
 import '../pages/splash/splash_view.dart';
 
@@ -141,6 +143,11 @@ class AppPages {
       name: AppRoutes.userProfilePanel,
       page: () => UserProfilePanelPage(),
       binding: UserProfilePanelBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.aliasEdit,
+      page: () => AliasEditPage(),
+      binding: AliasEditBinding(),
     ),
     _pageBuilder(
       name: AppRoutes.applyFriend,

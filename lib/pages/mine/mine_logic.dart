@@ -5,6 +5,7 @@ import '../../common/db/database.dart';
 import '../../common/models/user/user_info.dart';
 import '../../common/models/user/user_full_info.dart';
 import '../../common/utils/logger.dart';
+import '../../common/utils/time_utils.dart';
 import '../../core/controller/im_controller.dart';
 import '../../routes/app_navigator.dart';
 
@@ -64,7 +65,7 @@ class MineLogic extends GetxController {
   /// 将自己的用户信息写入 UserProfiles 表。
   Future<void> _saveToLocalDB(dynamic info) async {
     final now = DateTime.now().millisecondsSinceEpoch;
-    final createTime = _parseTime(info.createTime) ?? now;
+    final createTime = TimeUtils.parseServerTime(info.createTime) ?? now;
     await dbLogic.userProfileDao.upsert(
       UserProfilesCompanion(
         userId: Value(info.uid?.toString() ?? ''),
@@ -78,12 +79,6 @@ class MineLogic extends GetxController {
         createTime: Value(createTime),
       ),
     );
-  }
-
-  /// 解析服务端返回的时间字符串（"2026-06-21 19:21:31"）为毫秒时间戳。
-  int? _parseTime(String? timeStr) {
-    if (timeStr == null || timeStr.isEmpty) return null;
-    return DateTime.tryParse(timeStr)?.millisecondsSinceEpoch;
   }
   
   void _updateLocalCache(UserProfile selfProfile) {

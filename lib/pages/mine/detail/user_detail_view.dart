@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../common/styles/colors.dart';
 import '../../../common/styles/text_styles.dart';
+import '../../../common/utils/time_utils.dart';
 import '../../../component/gender_picker.dart';
 import '../../../component/date_picker.dart';
 import '../../../component/region_picker.dart';
@@ -116,7 +117,7 @@ class UserDetailPage extends StatelessWidget {
       _divider(),
       Obx(() => _buildInfoRow(
             label: '注册时间',
-            value: logic.formatTime(logic.fullInfo.createTime),
+            value: TimeUtils.formatDateFromString(logic.fullInfo.createTime),
           )),
     ]);
   }

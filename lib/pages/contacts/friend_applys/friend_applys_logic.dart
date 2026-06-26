@@ -65,10 +65,10 @@ class FriendApplysLogic extends GetxController {
   /// 向服务端请求好友申请列表并同步到本地数据库。
   Future<void> _fetchFromServer(String userId) async {
     try {
-      final sinceId = await _requestDao.getMaxId();
-      final list = await imLogic.fetchFriendApplys(sinceId: sinceId);
+      final sinceUpdateTime = await _requestDao.getMaxUpdateTime();
+      final list = await imLogic.fetchFriendApplys(sinceUpdateTime: sinceUpdateTime);
       if (list.isNotEmpty) {
-        await _requestDao.syncFromServer(userId, list, sinceId: sinceId);
+        await _requestDao.syncFromServer(userId, list, sinceUpdateTime: sinceUpdateTime);
       }
     } catch (e) {
       Logger.print('FriendApplysLogic — fetchFromServer error: $e');

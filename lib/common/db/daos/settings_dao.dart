@@ -60,4 +60,7 @@ class SettingsDao extends DatabaseAccessor<AppDatabase>
   /// 删除配置项。
   Future<void> remove(String key) =>
       (delete(appSettings)..where((s) => s.key.equals(key))).go();
+
+  /// 清空所有设置项（调试用）。
+  Future<void> clear() => delete(appSettings).go();
 }

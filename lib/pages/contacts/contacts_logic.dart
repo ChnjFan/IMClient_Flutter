@@ -4,6 +4,7 @@ import '../../common/db/database.dart';
 import '../../common/db/daos/friend_dao.dart';
 import '../../common/utils/logger.dart';
 import '../../core/controller/im_controller.dart';
+import '../home/home_logic.dart';
 
 class ContactsLogic extends GetxController {
   final AppDatabase _db = Get.find<AppDatabase>();
@@ -14,12 +15,21 @@ class ContactsLogic extends GetxController {
   final isLoading = true.obs;
 
   StreamSubscription<List<FriendWithProfile>>? _subscription;
+  bool _isFetching = false;
 
   /// 获取好友的展示名称：别名 > 昵称 > userId。
+  ///
+  /// 与 [UserInfo.getShowName] 保持一致：alias 或 name 为空字符串时视为无效，
+  /// 继续向下 fallback，避免显示空白。
   String displayName(FriendWithProfile item) {
-    return item.friend.alias ??
-        item.profile?.name ??
-        item.friend.userId;
+    final alias = item.friend.alias;
+    final profileName = item.profile?.name;
+    final userId = item.friend.userId;
+
+    // 空字符串等同于 null，不展示
+    if (alias != null && alias.isNotEmpty) return alias;
+    if (profileName != null && profileName.isNotEmpty) return profileName;
+    return userId;
   }
 
   /// 按名称首字母对好友进行分组（A-Z + #），组内按名称字母序排列。
@@ -71,30 +81,50 @@ class ContactsLogic extends GetxController {
     _friendDao = _db.friendDao;
     _subscription = _friendDao.watchAllWithProfile().listen(
       (list) {
-        friends.value = list;
+        // 过滤掉自己的信息，好友列表不显示当前登录用户
+        final currentUid = _imController.userInfo.value.uid;
+        final filtered = list.where((f) => f.friend.userId != currentUid).toList();
+        friends.value = filtered;
         isLoading.value = false;
+        if (filtered.isNotEmpty) {
+          final first = filtered.first;
+          Logger.print(
+              'ContactsLogic — watch emitted ${filtered.length} friends (filtered from ${list.length}). '
+              'First: alias=${first.friend.alias}, profileName=${first.profile?.name}, '
+              'userId=${first.friend.userId}, profileIsNull=${first.profile == null}');
+        }
       },
       onError: (_) {
         isLoading.value = false;
       },
     );
     _fetchFriendListFromServer();
+
+    // 每次切换到通讯录 tab 时向服务端拉取最新好友列表
+    final homeLogic = Get.find<HomeLogic>();
+    ever<int>(homeLogic.index, (idx) {
+      if (idx == 1) _fetchFriendListFromServer();
+    });
   }
 
-  /// 进入通讯录后，从服务端增量拉取好友列表。
+  /// 从服务端增量拉取好友列表。
   Future<void> _fetchFriendListFromServer() async {
+    if (_isFetching) return;
+    _isFetching = true;
     try {
-      final sinceId = await _friendDao.getMaxId();
-      Logger.print('ContactsLogic — fetching friend list with sinceId=$sinceId');
-      final list = await _imController.fetchFriendList(sinceId: sinceId);
+      final sinceUpdateTime = await _friendDao.getMaxUpdateTime();
+      Logger.print('ContactsLogic — fetching friend list with sinceUpdateTime=$sinceUpdateTime');
+      final list = await _imController.fetchFriendList(sinceUpdateTime: sinceUpdateTime);
       Logger.print('ContactsLogic — server returned ${list.length} friends');
       if (list.isNotEmpty) {
-        await _friendDao.syncFromServer(list, sinceId: sinceId);
-        Logger.print('ContactsLogic — synced ${list.length} friends from server (sinceId=$sinceId)');
+        await _friendDao.syncFromServer(list, sinceUpdateTime: sinceUpdateTime);
+        Logger.print('ContactsLogic — synced ${list.length} friends from server (sinceUpdateTime=$sinceUpdateTime)');
       }
     } catch (e, stack) {
       Logger.print('ContactsLogic — fetchFriendList error: $e\n$stack');
       isLoading.value = false;
+    } finally {
+      _isFetching = false;
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import '../database.dart';
+import '../../utils/time_utils.dart';
 import '../tables.dart';
 
 part 'friend_request_dao.g.dart';
@@ -120,16 +121,19 @@ class FriendRequestDao extends DatabaseAccessor<AppDatabase>
   Future<void> deleteById(int id) =>
       (delete(friendRequests)..where((r) => r.id.equals(id))).go();
 
-  /// 获取本地好友请求表中最大的 id。
+  /// 清空所有好友申请（调试用）。
+  Future<void> clear() => delete(friendRequests).go();
+
+  /// 获取本地好友请求表中最大的 updateTime，转为服务端时间字符串。
   ///
-  /// 用于增量拉取：将最大 id 传给服务端，只拉取 id > sinceId 的新申请。
-  /// 表为空时返回 0。
-  Future<int> getMaxId() async {
+  /// 用于增量拉取：将最大 updateTime 传给服务端，只拉取在此之后更新的记录。
+  /// 表为空时返回空字符串。
+  Future<String> getMaxUpdateTime() async {
     final query = selectOnly(friendRequests)
-      ..addColumns([friendRequests.id.max()]);
+      ..addColumns([friendRequests.updateTime.max()]);
     final row = await query.getSingleOrNull();
-    final maxId = row?.read(friendRequests.id.max()) ?? 0;
-    return maxId;
+    final maxMs = row?.read(friendRequests.updateTime.max()) ?? 0;
+    return TimeUtils.toServerTimeString(maxMs);
   }
 
   /// 从服务端同步好友申请列表（增量模式），同时处理收到和发出的申请。
@@ -138,21 +142,28 @@ class FriendRequestDao extends DatabaseAccessor<AppDatabase>
   /// - [uid] == currentUid → 发出的申请
   /// - [friend_id] == currentUid → 收到的申请
   ///
-  /// [sinceId] == 0 时（首次拉取），先删除当前用户相关的所有待处理申请，
+  /// [sinceUpdateTime] 为空时（首次拉取），先删除当前用户相关的所有待处理申请，
   /// 再批量插入服务端返回的全量列表。
   ///
-  /// [sinceId] > 0 时（增量拉取），直接 upsert 服务端返回的新记录，
+  /// [sinceUpdateTime] 非空时（增量拉取），直接 upsert 服务端返回的新记录，
   /// 保留本地已有数据。
   ///
   /// 同时将申请人的资料（name, avatar_url 等）写入 [UserProfiles] 表。
   Future<void> syncFromServer(
     String currentUid,
     List<Map<String, dynamic>> list, {
-    int sinceId = 0,
+    String sinceUpdateTime = '',
   }) async {
+    // 预查询已有记录，构建 (uid|friendId) → id 的映射，用于按 pair 去重。
+    final existingRows = await select(friendRequests).get();
+    final existingIds = <String, int>{};
+    for (final row in existingRows) {
+      existingIds['${row.uid}|${row.friendId}'] = row.id;
+    }
+
     await batch((batch) {
       // 首次拉取时清空当前用户相关的所有待处理申请
-      if (sinceId == 0) {
+      if (sinceUpdateTime.isEmpty) {
         batch.deleteWhere(
           friendRequests,
           (r) => (r.friendId.equals(currentUid) | r.uid.equals(currentUid)) &
@@ -172,20 +183,26 @@ class FriendRequestDao extends DatabaseAccessor<AppDatabase>
         final isSent = uid == currentUid;
         if (!isReceived && !isSent) continue;
 
-        final message = item['msg'] as String?;
+        final message = item['message'] as String?;
         final status = item['status'] as int? ?? 0;
-        final createTime = _parseTime(item['created_time'] as String?) ?? now;
+        final createTime = TimeUtils.parseServerTime(item['create_time'] as String?) ?? now;
+        final updateTime = TimeUtils.parseServerTime(item['update_time'] as String?) ?? 0;
 
-        // 始终使用服务端返回的 id，保证 getMaxId() 与服务端游标一致
-        final companion = serverId != null
+        // 按 (uid, friendId) pair 去重：本地已有相同 pair 则复用其 id，
+        // 确保 insertOrReplace 覆盖旧记录而非插入重复行。
+        final pairKey = '$uid|$friendId';
+        final existingId = existingIds[pairKey];
+        final effectiveId = existingId ?? serverId;
+
+        final companion = effectiveId != null
             ? FriendRequestsCompanion(
-                id: Value(serverId),
+                id: Value(effectiveId),
                 uid: Value(uid),
                 friendId: Value(friendId),
                 message: Value(message),
                 status: Value(status),
                 createTime: Value(createTime),
-                updateTime: Value(now),
+                updateTime: Value(updateTime),
               )
             : FriendRequestsCompanion.insert(
                 uid: uid,
@@ -193,7 +210,7 @@ class FriendRequestDao extends DatabaseAccessor<AppDatabase>
                 message: Value(message),
                 status: Value(status),
                 createTime: createTime,
-                updateTime: now,
+                updateTime: updateTime,
               );
 
         batch.insert(
@@ -202,33 +219,35 @@ class FriendRequestDao extends DatabaseAccessor<AppDatabase>
           mode: InsertMode.insertOrReplace,
         );
 
-        // 将申请人的资料写入 user_profiles（服务端返回的是平铺字段）
-        if (uid.isNotEmpty) {
+        // 新记录插入后补充到映射中，防止同批次内后续重复项产生新 id
+        if (existingId == null && effectiveId != null) {
+          existingIds[pairKey] = effectiveId;
+        }
+
+        // 将对方资料写入 user_profiles：
+        // - 收到的申请：写入发起人 (uid) 的资料
+        // - 发出的申请：写入目标用户 (friendId) 的资料
+        final profileUserId = isSent ? friendId : uid;
+        if (profileUserId.isNotEmpty) {
           batch.insert(
             userProfiles,
             UserProfilesCompanion.insert(
-              userId: uid,
+              userId: profileUserId,
               name: Value(item['name'] as String?),
               alias: Value(item['alias'] as String? ?? item['alias'] as String?),
-              avatarUrl: Value(item['avatar_url'] as String?),
-              email: Value(item['email'] as String?),
-              region: Value(item['region'] as String?),
+              avatarUrl: Value(item['avatar_url'] as String? ?? ''),
+              email: Value(item['email'] as String? ?? ''),
+              region: Value(item['region'] as String? ?? ''),
               gender: Value(item['gender'] as int? ?? 0),
               isSelf: const Value(false),
-              createTime: now,
-              updateTime: now,
+              createTime: createTime,
+              updateTime: updateTime,
             ),
             mode: InsertMode.insertOrReplace,
           );
         }
       }
     });
-  }
-
-  /// 解析服务端返回的时间字符串（"2026-06-21 19:21:31"）为毫秒时间戳。
-  int? _parseTime(String? timeStr) {
-    if (timeStr == null || timeStr.isEmpty) return null;
-    return DateTime.tryParse(timeStr)?.millisecondsSinceEpoch;
   }
 }
 

@@ -68,4 +68,7 @@ class MessageDao extends DatabaseAccessor<AppDatabase>
   Future<int> deleteOlderThan(int timestampMs) =>
       (delete(messages)..where((m) => m.createTime.isSmallerThanValue(timestampMs)))
           .go();
+
+  /// 清空所有消息（调试用）。
+  Future<void> clear() => delete(messages).go();
 }
