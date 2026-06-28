@@ -45,4 +45,7 @@ class AppStrings {
   static const String about = '关于';
   static const String logout = '退出登录';
   static const String confirmLogout = '确定要退出登录吗？';
+
+  // Chat
+  static const String newConversation = '你们已成为好友，开始聊天吧。';
 }

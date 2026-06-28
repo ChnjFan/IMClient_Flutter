@@ -71,4 +71,58 @@ class MessageDao extends DatabaseAccessor<AppDatabase>
 
   /// 清空所有消息（调试用）。
   Future<void> clear() => delete(messages).go();
+
+  /// 收到新消息推送时插入一条消息（避免调用方直接构造 Drift companion）。
+  Future<void> insertFromNotification({
+    required String msgId,
+    required String conversationId,
+    String? fromUid,
+    String? toUid,
+    String? content,
+    int contentType = 0,
+    int status = 0,
+    required int createTime,
+  }) async {
+    await insert(
+      MessagesCompanion(
+        msgId: Value(msgId),
+        conversationId: Value(conversationId),
+        fromUid: Value(fromUid),
+        toUid: Value(toUid),
+        content: Value(content),
+        contentType: Value(contentType),
+        status: Value(status),
+        createTime: Value(createTime),
+      ),
+    );
+  }
+
+  /// 从服务端历史消息原始数据批量插入消息。
+  Future<void> insertFromHistoryMaps(List<Map<String, dynamic>> list) async {
+    if (list.isEmpty) return;
+    final companions = list.map((map) {
+      return MessagesCompanion(
+        msgId: Value(map['msg_id']?.toString() ?? ''),
+        conversationId: Value(map['conv_id']?.toString() ?? ''),
+        fromUid: Value(map['from_uid'] as String?),
+        toUid: Value(map['to_uid'] as String?),
+        content: Value(map['content'] as String?),
+        contentType: Value(map['content_type'] as int? ?? 0),
+        status: Value(map['status'] as int? ?? 1),
+        createTime: Value(map['create_time'] as int? ?? DateTime.now().millisecondsSinceEpoch),
+      );
+    }).toList();
+    await insertAll(companions);
+  }
+
+  /// 获取指定会话中最大的 createTime，用于增量同步去重。
+  Future<int> getMaxCreateTime(String conversationId) async {
+    final query = selectOnly(messages)
+      ..addColumns([messages.createTime])
+      ..where(messages.conversationId.equals(conversationId))
+      ..orderBy([OrderingTerm(expression: messages.createTime, mode: OrderingMode.desc)])
+      ..limit(1);
+    final row = await query.getSingleOrNull();
+    return row?.read(messages.createTime) ?? 0;
+  }
 }

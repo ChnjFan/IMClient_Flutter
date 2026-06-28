@@ -202,9 +202,7 @@ class UserProfilePanelPage extends StatelessWidget {
             _buildButton(
               icon: Icons.chat_bubble_outline,
               text: '发送消息',
-              onPressed: () {
-                // TODO: 跳转到聊天页面
-              },
+              onPressed: () => logic.startChat(),
               fullWidth: true,
             ),
             const SizedBox(height: 12),

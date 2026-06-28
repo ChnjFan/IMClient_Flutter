@@ -17,7 +17,7 @@ class UserFullInfo extends UserInfo {
   String? signature;
   /// 地区
   String? region;
-  /// 好友状态：0=非好友, 1=正常好友, 2=已拉黑
+  /// 好友状态：0=非好友, 1=正常好友, 2=已拉黑, 3=已删除, 4-屏蔽消息
   int? friendStatus;
   /// 个人简介
   String? selfIntro;

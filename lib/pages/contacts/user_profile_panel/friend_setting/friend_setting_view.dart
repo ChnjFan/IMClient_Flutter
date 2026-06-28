@@ -127,22 +127,48 @@ class FriendSettingPage extends StatelessWidget {
     required String label,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        height: 56,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            Icon(icon, size: 22, color: AppColors.c_FF381F),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(fontSize: 14, color: AppColors.c_FF381F),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        splashColor: AppColors.c_FF381F.withValues(alpha: 0.06),
+        highlightColor: AppColors.c_FF381F.withValues(alpha: 0.04),
+        child: Container(
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              // 红色调图标圆形容器
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.c_FF381F.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 20, color: AppColors.c_FF381F),
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              // 标签
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.c_FF381F,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              // 右侧箭头，暗示可点击
+              const Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: AppColors.c_FF381F,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -161,19 +187,90 @@ class FriendSettingPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('删除联系人'),
-        content: const Text('删除后将无法恢复，确定删除该联系人吗？'),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        contentPadding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 警告图标
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.c_FF381F.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.person_remove_rounded,
+                size: 26,
+                color: AppColors.c_FF381F,
+              ),
+            ),
+            const SizedBox(height: 16),
+            // 标题
+            const Text(
+              '删除联系人',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: AppColors.c_0C1C33,
+              ),
+            ),
+            const SizedBox(height: 8),
+            // 描述
+            const Text(
+              '删除后将无法恢复，确定删除该联系人吗？',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.c_8E9AB0,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              logic.deleteContact();
-            },
-            child: const Text('删除', style: TextStyle(color: AppColors.c_FF381F)),
+          Row(
+            children: [
+              // 取消按钮
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    side: const BorderSide(color: AppColors.c_E8EAEF),
+                    foregroundColor: AppColors.c_0C1C33,
+                  ),
+                  child: const Text('取消', style: TextStyle(fontSize: 15)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // 删除按钮
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    logic.deleteContact();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    backgroundColor: AppColors.c_FF381F,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text('删除', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+                ),
+              ),
+            ],
           ),
         ],
       ),

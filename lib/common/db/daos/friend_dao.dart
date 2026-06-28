@@ -144,7 +144,7 @@ class FriendDao extends DatabaseAccessor<AppDatabase> with _$FriendDaoMixin {
         .write(FriendsCompanion(alias: Value(alias), updateTime: Value(now)));
   }
 
-  /// 更新好友状态（拉黑/取消拉黑）。
+  /// 更新好友状态（拉黑/取消拉黑/删除好友）。
   Future<void> updateStatus(String userId, int status) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     await (update(friends)..where((f) => f.userId.equals(userId)))

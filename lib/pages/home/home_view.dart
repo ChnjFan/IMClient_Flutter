@@ -4,6 +4,7 @@ import '../../common/res/images.dart';
 import '../../common/res/strings.dart';
 import '../../common/styles/colors.dart';
 import '../contacts/contacts_view.dart';
+import '../conversation/conversation_view.dart';
 import '../mine/mine_view.dart';
 import 'home_logic.dart';
 
@@ -20,7 +21,7 @@ class HomePage extends StatelessWidget {
         () => IndexedStack(
           index: logic.index.value,
           children: [
-            _buildPlaceholderTab(AppStrings.home, AppImages.homeTabSel),
+            ConversationPage(),
             ContactsPage(),
             MinePage(),
           ],
@@ -50,25 +51,6 @@ class HomePage extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildPlaceholderTab(String title, IconData icon) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 64, color: AppColors.c_0089FF_opacity10),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              color: AppColors.c_8E9AB0,
-            ),
-          ),
-        ],
       ),
     );
   }

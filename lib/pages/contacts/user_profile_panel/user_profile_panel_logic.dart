@@ -186,13 +186,36 @@ class UserProfilePanelLogic extends GetxController {
     final user = userFullInfo.value;
     if (user == null) return;
     final uid = user.uid ?? '';
-    final success = await _imController.deleteFriend(friendId: uid);
+    const newStatus = 3;
+    final success = await _imController.updateFriend(friendId: uid, status: newStatus);
     if (success) {
-      await _db.friendDao.deleteByUserId(uid);
-      AppToast.success('已删除联系人');
+      await _db.friendDao.updateStatus(uid, newStatus);
+      // 先更新本地状态，让 profile panel 在返回后能反映已删除
+      user.friendStatus = newStatus;
+      userFullInfo.refresh();
       Get.back();
+      AppToast.success('已删除联系人');
     } else {
       AppToast.error('删除失败');
+    }
+  }
+
+  /// 创建会话并跳转到聊天页面。
+  Future<void> startChat() async {
+    final user = userFullInfo.value;
+    if (user == null) return;
+    final uid = user.uid;
+    if (uid == null || uid.isEmpty) return;
+
+    final convId = await _imController.createConversation(
+      toUid: uid,
+      title: user.getShowName(),
+    );
+
+    if (convId != null && convId.isNotEmpty) {
+      AppNavigator.startChat(convId: convId, targetUser: user);
+    } else {
+      AppToast.error('创建会话失败');
     }
   }
 

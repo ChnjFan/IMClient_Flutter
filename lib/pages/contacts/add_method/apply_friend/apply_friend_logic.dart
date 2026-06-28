@@ -1,3 +1,4 @@
+import 'package:imclient_flutter/common/models/server_resp.dart';
 import 'package:imclient_flutter/component/toast.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -34,13 +35,16 @@ class ApplyFriendLogic extends GetxController {
 
     isLoading.value = true;
     try {
-      final success = await imLogic.addFriend(
+      final rspCode = await imLogic.addFriend(
         uid: targetUser.uid ?? '',
         reason: text,
       );
-      if (success) {
+      if (rspCode == ServerError.success) {
         Get.back(result: true);
         AppToast.success('好友申请已发送');
+      } else if (rspCode == ServerError.errIsFriend) {
+        Get.back(result: true);
+        AppToast.success('已经添加为好友');
       } else {
         AppToast.error('好友申请发送失败，请稍后重试');
       }

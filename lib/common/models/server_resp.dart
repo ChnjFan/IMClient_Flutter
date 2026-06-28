@@ -63,7 +63,7 @@ class ServerError {
   static const int errMysql = 1003;
   static const int errRedis = 1004;
   static const int errFile = 1005;
-  static const int errRequest = 1006;
+static const int errRequest = 1006;
   // ---- 验证码 ----
   static const int errCodeExpired = 2001;
   static const int errCodeNotFound = 2002;

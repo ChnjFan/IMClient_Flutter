@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' as dart_io;
 import 'package:get/get.dart';
 import 'package:imclient_flutter/common/db/database.dart';
 import 'package:imclient_flutter/common/models/user/user_full_info.dart';
@@ -227,7 +228,7 @@ class IMController extends GetxController {
   /// 发送添加好友请求。
   /// [uid] 目标用户 ID，[reason] 申请留言。
   /// 返回 `true` 表示请求发送成功。
-  Future<bool> addFriend({
+  Future<int> addFriend({
     required String uid,
     required String reason,
   }) async {
@@ -237,11 +238,18 @@ class IMController extends GetxController {
       {'uid': userInfo.value.uid, 'friend_id': uid, 'message': reason},
     );
 
-    if (resp == null || !resp.isSuccess) {
-      Logger.print('IMController — addFriend failed: ${resp?.errCode}');
-      return false;
+    if (resp == null) {
+      Logger.print('IMController — addFriend failed: no response');
+      return ServerError.errRequest;
     }
-    return true;
+
+    // errIsFriend 表示双方已是好友，按成功处理
+    if (resp.isSuccess || resp.errCode == ServerError.errIsFriend) {
+      return resp.errCode;
+    }
+
+    Logger.print('IMController — addFriend failed: ${resp.errCode}');
+    return resp.errCode;
   }
 
   /// 拉取好友申请列表（支持增量拉取）。
@@ -366,6 +374,165 @@ class IMController extends GetxController {
     return list.cast<Map<String, dynamic>>();
   }
 
+  /// 拉取会话列表，返回原始服务端数据。
+  Future<List<Map<String, dynamic>>> fetchConversationList() async {
+    final resp = await _tcp.sendRequest(
+      MsgId.getConversationListReq,
+      MsgId.getConversationListRsp,
+      {'uid': userInfo.value.uid},
+    );
+
+    if (resp == null || !resp.isSuccess) {
+      Logger.print('IMController — fetchConversationList failed: ${resp?.errCode}');
+      return [];
+    }
+
+    final list = resp.get<List<dynamic>>('data') ?? [];
+    return list.cast<Map<String, dynamic>>();
+  }
+
+  /// 创建单聊会话，返回 convId。成功后将服务端返回的会话信息写入本地数据库。
+  ///
+  /// [title] 会话标题（单聊时为对方显示名）。
+  Future<String?> createConversation({required String toUid, String? title}) async {
+    final resp = await _tcp.sendRequest(
+      MsgId.chatConvCreateReq,
+      MsgId.chatConvCreateRsp,
+      {'uid': userInfo.value.uid, 'friend_id': toUid},
+    );
+
+    if (resp == null || !resp.isSuccess) {
+      Logger.print('IMController — createConversation failed: ${resp?.errCode}');
+      return null;
+    }
+
+    final convId = resp.get<String>('conv_id');
+    Logger.print('IMController — conversation created: $convId');
+
+    // 将服务端返回的会话信息保存到本地数据库
+    try {
+      final db = Get.find<AppDatabase>();
+      await db.conversationDao.upsertFromCreateResponse(resp.data, titleOverride: title);
+      Logger.print('IMController — conversation saved to local db: $convId');
+    } catch (e) {
+      Logger.print('IMController — failed to save conversation to local db: $e');
+    }
+
+    return convId;
+  }
+
+  /// 发送聊天消息，返回 msgId（成功时）或 null（失败时）。
+  Future<String?> sendMessage({
+    required String convId,
+    required String toUid,
+    required String content,
+    int contentType = 0,
+    String msgId = '',
+  }) async {
+    final resp = await _tcp.sendRequest(
+      MsgId.chatMsgReq,
+      MsgId.chatMsgRsp,
+      {
+        'from_uid': userInfo.value.uid,
+        'to_uid': toUid,
+        'conv_id': convId,
+        'content': content,
+        'content_type': contentType,
+        'msg_id': msgId,
+      },
+    );
+
+    if (resp == null || !resp.isSuccess) {
+      Logger.print('IMController — sendMessage failed: ${resp?.errCode}');
+      return null;
+    }
+
+    final serverMsgId = resp.get<String>('msg_id') ?? msgId;
+    return serverMsgId;
+  }
+
+  /// 拉取会话历史消息。
+  Future<List<Map<String, dynamic>>> fetchHistoryMessages({
+    required String convId,
+    int limit = 20,
+    int sinceCreateTime = 0,
+  }) async {
+    final resp = await _tcp.sendRequest(
+      MsgId.chatConvHistoryMsgReq,
+      MsgId.chatConvHistoryMsgRsp,
+      {
+        'conv_id': convId,
+        'limit': limit,
+        'since_create_time': sinceCreateTime,
+      },
+    );
+
+    if (resp == null || !resp.isSuccess) {
+      Logger.print('IMController — fetchHistoryMessages failed: ${resp?.errCode}');
+      return [];
+    }
+
+    final list = resp.get<List<dynamic>>('data') ?? [];
+    return list.cast<Map<String, dynamic>>();
+  }
+
+  /// 上传文件，返回文件 URL。
+  Future<String?> uploadFile(String filePath) async {
+    // 读取文件字节并转为 base64 发送（未来可改为分块上传）
+    try {
+      final file = await _readFileBytes(filePath);
+      if (file == null) return null;
+
+      final resp = await _tcp.sendRequest(
+        MsgId.uploadFileReq,
+        MsgId.uploadFileRsp,
+        {
+          'uid': userInfo.value.uid,
+          'file_name': filePath.split('/').last,
+          'file_data': file,
+        },
+      );
+
+      if (resp == null || !resp.isSuccess) {
+        Logger.print('IMController — uploadFile failed: ${resp?.errCode}');
+        return null;
+      }
+
+      return resp.get<String>('url');
+    } catch (e) {
+      Logger.print('IMController — uploadFile error: $e');
+      return null;
+    }
+  }
+
+  /// 读取文件并返回 base64 编码字符串。
+  Future<String?> _readFileBytes(String filePath) async {
+    try {
+      final bytes = await dart_io.File(filePath).readAsBytes();
+      return _base64Encode(bytes);
+    } catch (e) {
+      Logger.print('IMController — _readFileBytes error: $e');
+      return null;
+    }
+  }
+
+  static String _base64Encode(List<int> bytes) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    final result = StringBuffer();
+    int i = 0;
+    while (i < bytes.length) {
+      final b0 = bytes[i];
+      final b1 = i + 1 < bytes.length ? bytes[i + 1] : 0;
+      final b2 = i + 2 < bytes.length ? bytes[i + 2] : 0;
+      result.write(chars[(b0 >> 2) & 63]);
+      result.write(chars[((b0 << 4) | (b1 >> 4)) & 63]);
+      result.write(i + 1 < bytes.length ? chars[((b1 << 2) | (b2 >> 6)) & 63] : '=');
+      result.write(i + 2 < bytes.length ? chars[b2 & 63] : '=');
+      i += 3;
+    }
+    return result.toString();
+  }
+
   Future<UserFullInfo> getUserFullInfo({
     required String uid,
     required String from,
@@ -424,8 +591,42 @@ class IMController extends GetxController {
   void _onNotifyFriendAuth(ServerResp resp) =>
       Logger.print('IMController — friend auth result from: ${resp.get('friend_id')}');
 
-  void _onNotifyChatMsg(ServerResp resp) =>
-      Logger.print('IMController — new message from: ${resp.get('fromUid')}');
+  void _onNotifyChatMsg(ServerResp resp) async {
+    Logger.print('IMController — new message from: ${resp.get('fromUid')}');
+    try {
+      final convId = resp.get<String>('conv_id') ?? '';
+      final fromUid = resp.get<String>('from_uid') ?? '';
+      final toUid = resp.get<String>('to_uid') ?? '';
+      final content = resp.get<String>('content') ?? '';
+      final contentType = resp.get<int>('content_type') ?? 0;
+      final msgId = resp.get<String>('msg_id') ?? DateTime.now().millisecondsSinceEpoch.toString();
+      final createTime = resp.get<int>('create_time') ?? DateTime.now().millisecondsSinceEpoch;
+
+      if (convId.isNotEmpty) {
+        final db = Get.find<AppDatabase>();
+
+        // 插入消息到本地数据库
+        await db.messageDao.insertFromNotification(
+          msgId: msgId,
+          conversationId: convId,
+          fromUid: fromUid,
+          toUid: toUid,
+          content: content,
+          contentType: contentType,
+          createTime: createTime,
+        );
+
+        // 更新会话列表
+        await db.conversationDao.upsertFromNewMessage(
+          convId: convId,
+          fromUid: fromUid,
+          content: content,
+        );
+      }
+    } catch (e) {
+      Logger.print('IMController — _onNotifyChatMsg update conversation error: $e');
+    }
+  }
 
   void _onHeartbeatRsp(ServerResp resp) =>
       Logger.print('IMController — heartbeat response received');

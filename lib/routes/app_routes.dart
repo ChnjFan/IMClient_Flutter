@@ -25,4 +25,5 @@ abstract class AppRoutes {
   static const String processApply = '/contacts/process_apply';
   static const String friendSetting = '/contacts/friend_setting';
   static const String setting = '/setting';
+  static const String chat = '/chat';
 }

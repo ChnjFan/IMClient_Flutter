@@ -81,9 +81,9 @@ class ContactsLogic extends GetxController {
     _friendDao = _db.friendDao;
     _subscription = _friendDao.watchAllWithProfile().listen(
       (list) {
-        // 过滤掉自己的信息，好友列表不显示当前登录用户
+        // 过滤掉自己的信息，以及已删除的好友（status=3）
         final currentUid = _imController.userInfo.value.uid;
-        final filtered = list.where((f) => f.friend.userId != currentUid).toList();
+        final filtered = list.where((f) => f.friend.userId != currentUid && f.friend.status != 3).toList();
         friends.value = filtered;
         isLoading.value = false;
         if (filtered.isNotEmpty) {

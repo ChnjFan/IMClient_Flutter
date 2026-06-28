@@ -42,6 +42,8 @@ import '../pages/contacts/user_profile_panel/friend_setting/friend_setting_bindi
 import '../pages/contacts/user_profile_panel/friend_setting/friend_setting_view.dart';
 import '../pages/mine/setting/setting_binding.dart';
 import '../pages/mine/setting/setting_view.dart';
+import '../pages/chat/chat_binding.dart';
+import '../pages/chat/chat_view.dart';
 import '../pages/splash/splash_binding.dart';
 import '../pages/splash/splash_view.dart';
 
@@ -177,6 +179,11 @@ class AppPages {
       name: AppRoutes.setting,
       page: () => SettingPage(),
       binding: SettingBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.chat,
+      page: () => ChatPage(),
+      binding: ChatBinding(),
     ),
   ];
 }

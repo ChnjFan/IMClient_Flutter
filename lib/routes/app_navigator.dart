@@ -138,4 +138,15 @@ class AppNavigator {
   static Future<T?>? startSetting<T extends Object?>() {
     return Get.toNamed(AppRoutes.setting);
   }
+
+  /// Navigate to chat page.
+  static Future<T?>? startChat<T extends Object?>({
+    required String convId,
+    dynamic targetUser,
+  }) {
+    return Get.toNamed(
+      AppRoutes.chat,
+      arguments: {'convId': convId, 'targetUser': targetUser},
+    );
+  }
 }
