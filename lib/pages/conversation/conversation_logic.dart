@@ -46,16 +46,33 @@ class ConversationLogic extends GetxController {
   }
 
   /// 从服务端拉取会话列表并同步到本地数据库。
+  ///
+  /// - 首次拉取（本地无数据）：全量同步，清表后写入。
+  /// - 后续拉取：带 since_update_time 增量同步，upsert 合并。
   Future<void> _fetchConversationListFromServer() async {
     if (_isFetching) return;
     _isFetching = true;
     try {
-      Logger.print('ConversationLogic — fetching conversation list from server');
-      final list = await _imController.fetchConversationList();
+      final sinceUpdateTime = await _conversationDao.getMaxUpdateTime();
+      final isFirstFetch = sinceUpdateTime == 0;
+
+      Logger.print(
+        'ConversationLogic — fetching conversation list from server'
+        '${isFirstFetch ? " (full sync)" : " (incremental since $sinceUpdateTime)"}',
+      );
+
+      final list = await _imController.fetchConversationList(
+        sinceUpdateTime: sinceUpdateTime,
+      );
       Logger.print('ConversationLogic — server returned ${list.length} conversations');
+
       if (list.isNotEmpty) {
-        await _conversationDao.syncFromServerMaps(list);
-        Logger.print('ConversationLogic — synced ${list.length} conversations from server');
+        if (isFirstFetch) {
+          await _conversationDao.syncFromServerMaps(list);
+        } else {
+          await _conversationDao.upsertFromServerMaps(list);
+        }
+        Logger.print('ConversationLogic — synced ${list.length} conversations');
       }
     } catch (e, stack) {
       Logger.print('ConversationLogic — fetchConversationList error: $e\n$stack');

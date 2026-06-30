@@ -375,11 +375,17 @@ class IMController extends GetxController {
   }
 
   /// 拉取会话列表，返回原始服务端数据。
-  Future<List<Map<String, dynamic>>> fetchConversationList() async {
+  ///
+  /// [sinceUpdateTime] 不为 0 时为增量拉取，服务端仅返回 update_time > 该值的会话。
+  Future<List<Map<String, dynamic>>> fetchConversationList({int sinceUpdateTime = 0}) async {
+    final req = <String, dynamic>{'uid': userInfo.value.uid};
+    if (sinceUpdateTime > 0) {
+      req['since_update_time'] = sinceUpdateTime;
+    }
     final resp = await _tcp.sendRequest(
       MsgId.getConversationListReq,
       MsgId.getConversationListRsp,
-      {'uid': userInfo.value.uid},
+      req,
     );
 
     if (resp == null || !resp.isSuccess) {
@@ -421,13 +427,13 @@ class IMController extends GetxController {
     return convId;
   }
 
-  /// 发送聊天消息，返回 msgId（成功时）或 null（失败时）。
-  Future<String?> sendMessage({
+  /// 发送聊天消息，返回服务端消息 ID（成功时）或 null（失败时）。
+  Future<int?> sendMessage({
     required String convId,
     required String toUid,
     required String content,
     int contentType = 0,
-    String msgId = '',
+    int msgId = 0,
   }) async {
     final resp = await _tcp.sendRequest(
       MsgId.chatMsgReq,
@@ -447,15 +453,15 @@ class IMController extends GetxController {
       return null;
     }
 
-    final serverMsgId = resp.get<String>('msg_id') ?? msgId;
-    return serverMsgId;
+    final rawMsgId = resp.get<String>('msg_id');
+    return rawMsgId != null ? int.tryParse(rawMsgId) : msgId;
   }
 
   /// 拉取会话历史消息。
   Future<List<Map<String, dynamic>>> fetchHistoryMessages({
     required String convId,
     int limit = 20,
-    int sinceCreateTime = 0,
+    int msgId = 0,
   }) async {
     final resp = await _tcp.sendRequest(
       MsgId.chatConvHistoryMsgReq,
@@ -463,7 +469,7 @@ class IMController extends GetxController {
       {
         'conv_id': convId,
         'limit': limit,
-        'since_create_time': sinceCreateTime,
+        'since_msg_id': msgId,
       },
     );
 
@@ -599,15 +605,15 @@ class IMController extends GetxController {
       final toUid = resp.get<String>('to_uid') ?? '';
       final content = resp.get<String>('content') ?? '';
       final contentType = resp.get<int>('content_type') ?? 0;
-      final msgId = resp.get<String>('msg_id') ?? DateTime.now().millisecondsSinceEpoch.toString();
+      final rawMsgId = resp.get<String>('msg_id');
+      final serverMsgId = rawMsgId != null ? int.tryParse(rawMsgId) : null;
       final createTime = resp.get<int>('create_time') ?? DateTime.now().millisecondsSinceEpoch;
 
       if (convId.isNotEmpty) {
         final db = Get.find<AppDatabase>();
 
         // 插入消息到本地数据库
-        await db.messageDao.insertFromNotification(
-          msgId: msgId,
+        final id = await db.messageDao.insertFromNotification(
           conversationId: convId,
           fromUid: fromUid,
           toUid: toUid,
@@ -615,6 +621,9 @@ class IMController extends GetxController {
           contentType: contentType,
           createTime: createTime,
         );
+        if (serverMsgId != null) {
+          await db.messageDao.updateServerMsgId(id, serverMsgId);
+        }
 
         // 更新会话列表
         await db.conversationDao.upsertFromNewMessage(

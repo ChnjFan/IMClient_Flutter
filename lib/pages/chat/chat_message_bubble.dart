@@ -52,80 +52,63 @@ class ChatMessageBubble extends StatelessWidget {
           // 对方头像（左侧）
           if (!isMine) _buildAvatar(peerAvatarUrl, onTap: onPeerAvatarTap),
           if (!isMine) const SizedBox(width: 8),
+          // 发送状态指示器（消息气泡左侧）
+          if (isMine) _buildStatusIndicator(isFailed, isSending),
+          if (isMine) const SizedBox(width: 6),
           // 消息内容
           Flexible(
-            child: Column(
-              crossAxisAlignment:
-                  isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                Container(
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.55,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _bubbleColor,
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(16),
-                      topRight: const Radius.circular(16),
-                      bottomLeft: Radius.circular(isMine ? 16 : 4),
-                      bottomRight: Radius.circular(isMine ? 4 : 16),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  child: isImage
-                      ? _buildImageContent()
-                      : _buildTextContent(),
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.55,
+              ),
+              decoration: BoxDecoration(
+                color: _bubbleColor,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(16),
+                  topRight: const Radius.circular(16),
+                  bottomLeft: Radius.circular(isMine ? 16 : 4),
+                  bottomRight: Radius.circular(isMine ? 4 : 16),
                 ),
-                // 发送失败重试
-                if (isFailed && isMine)
-                  GestureDetector(
-                    onTap: onResend,
-                    child: const Padding(
-                      padding: EdgeInsets.only(top: 4, right: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.error_outline,
-                              size: 14, color: AppColors.c_FF381F),
-                          SizedBox(width: 4),
-                          Text(
-                            '发送失败，点击重试',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.c_FF381F,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
                   ),
-              ],
+                ],
+              ),
+              child:
+                  isImage ? _buildImageContent() : _buildTextContent(),
             ),
           ),
           // 自己的头像（右侧）
           if (isMine) const SizedBox(width: 8),
           if (isMine) _buildAvatar(myAvatarUrl, onTap: onMyAvatarTap),
-          // 发送中转圈
-          if (isSending && isMine) ...[
-            const SizedBox(width: 6),
-            const SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(
-                strokeWidth: 1.5,
-                color: AppColors.c_8E9AB0,
-              ),
-            ),
-          ],
         ],
       ),
     );
+  }
+
+  /// 发送状态指示器：发送中显示转圈，失败显示错误图标。
+  Widget _buildStatusIndicator(bool isFailed, bool isSending) {
+    if (isSending) {
+      return const SizedBox(
+        width: 14,
+        height: 14,
+        child: CircularProgressIndicator(
+          strokeWidth: 1.5,
+          color: AppColors.c_8E9AB0,
+        ),
+      );
+    }
+    if (isFailed) {
+      return GestureDetector(
+        onTap: onResend,
+        child: const Icon(Icons.error_outline,
+            size: 14, color: AppColors.c_FF381F),
+      );
+    }
+    return const SizedBox.shrink();
   }
 
   static const BorderRadius _avatarRadius = BorderRadius.all(Radius.circular(8));

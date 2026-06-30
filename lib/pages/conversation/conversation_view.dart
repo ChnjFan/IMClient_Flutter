@@ -61,6 +61,7 @@ class ConversationPage extends StatelessWidget {
 
   Widget _buildConversationItem(Conversation conv) {
     final hasUnread = conv.unreadCount > 0;
+    final isMuted = conv.isMute == 1;
 
     return InkWell(
       onTap: () {
@@ -79,46 +80,58 @@ class ConversationPage extends StatelessWidget {
         color: AppColors.c_FFFFFF,
         child: Row(
           children: [
-            // 头像
-            _buildAvatar(conv.avatarUrl, conv.type),
+            // 头像 + 未读角标
+            _buildAvatarWithBadge(conv.avatarUrl, conv.type,
+                hasUnread: hasUnread, unreadCount: conv.unreadCount),
             const SizedBox(width: 12),
-            // 标题 + 最后消息
+            // 标题/时间 + 最后消息/免打扰
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    conv.title ?? conv.conversationId,
-                    style: AppTextStyles.ts_0C1C33_14sp,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  // 第一行：标题 + 时间
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          conv.title ?? conv.conversationId,
+                          style: AppTextStyles.ts_0C1C33_14sp,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        ConversationLogic.formatTime(conv.lastMsgTime),
+                        style: AppTextStyles.ts_8E9AB0_12sp,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    conv.lastMsg ?? '',
-                    style: AppTextStyles.ts_8E9AB0_12sp,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  // 第二行：最后消息 + 免打扰图标
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          conv.lastMsg ?? '',
+                          style: AppTextStyles.ts_8E9AB0_12sp,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isMuted) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.block_rounded,
+                          size: 14,
+                          color: AppColors.c_8E9AB0,
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
-            // 时间 + 未读角标
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  ConversationLogic.formatTime(conv.lastMsgTime),
-                  style: AppTextStyles.ts_8E9AB0_12sp,
-                ),
-                if (hasUnread) ...[
-                  const SizedBox(height: 4),
-                  _buildUnreadBadge(conv.unreadCount),
-                ],
-              ],
             ),
           ],
         ),
@@ -126,18 +139,36 @@ class ConversationPage extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar(String? avatarUrl, int type) {
-    return Container(
+  Widget _buildAvatarWithBadge(String? avatarUrl, int type,
+      {bool hasUnread = false, int unreadCount = 0}) {
+    return SizedBox(
       width: 48,
       height: 48,
-      decoration: BoxDecoration(
-        color: AppColors.c_0089FF_opacity10,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Icon(
-        type == 1 ? Icons.group_rounded : Icons.person_rounded,
-        size: 28,
-        color: AppColors.c_0089FF,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // 头像
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.c_0089FF_opacity10,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              type == 1 ? Icons.group_rounded : Icons.person_rounded,
+              size: 28,
+              color: AppColors.c_0089FF,
+            ),
+          ),
+          // 未读角标（头像右上角）
+          if (hasUnread)
+            Positioned(
+              right: -4,
+              top: -4,
+              child: _buildUnreadBadge(unreadCount),
+            ),
+        ],
       ),
     );
   }

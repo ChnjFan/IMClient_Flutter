@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:imclient_flutter/common/res/strings.dart';
 import 'package:imclient_flutter/common/styles/text_styles.dart';
-import '../../common/models/user/user_info.dart';
 import '../../common/styles/colors.dart';
 import '../../core/controller/im_controller.dart';
 import '../../routes/app_navigator.dart';

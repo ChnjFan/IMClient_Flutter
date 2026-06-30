@@ -94,12 +94,12 @@ class ChatLogic extends GetxController {
     _isFetchingHistory = true;
 
     try {
-      final sinceCreateTime = await _messageDao.getMaxCreateTime(convId);
-      Logger.print('ChatLogic — fetching history since $sinceCreateTime for conv $convId');
+      final servMsgId = await _messageDao.getMaxServerMsgId(convId);
+      Logger.print('ChatLogic — fetching history since $servMsgId for conv $convId');
 
       final list = await _imController.fetchHistoryMessages(
         convId: convId,
-        sinceCreateTime: sinceCreateTime,
+        msgId: servMsgId,
       );
 
       if (list.isNotEmpty) {
@@ -119,13 +119,11 @@ class ChatLogic extends GetxController {
     isSending.value = true;
 
     try {
-      final msgId = DateTime.now().millisecondsSinceEpoch.toString();
       final now = DateTime.now().millisecondsSinceEpoch;
       final toUid = targetUser?.uid ?? '';
 
-      // 先写入本地（状态：发送中）
-      await _messageDao.insertFromNotification(
-        msgId: msgId,
+      // 先写入本地（状态：发送中），获取自增 id
+      final id = await _messageDao.insertFromNotification(
         conversationId: convId,
         fromUid: currentUid,
         toUid: toUid,
@@ -135,23 +133,27 @@ class ChatLogic extends GetxController {
         createTime: now,
       );
 
+      // 更新会话的最后消息
+      await _db.conversationDao.updateLastMessage(convId: convId, content: text);
+
       // 发送到服务端
       final serverMsgId = await _imController.sendMessage(
         convId: convId,
         toUid: toUid,
         content: text,
         contentType: 0,
-        msgId: msgId,
+        msgId: id,
       );
 
       if (serverMsgId != null) {
-        // 更新为已发送
-        await _messageDao.updateStatus(msgId, convId, 1);
-        Logger.print('ChatLogic — message sent: $msgId');
+        // 更新为已发送，存储服务端消息 ID
+        await _messageDao.updateServerMsgId(id, serverMsgId);
+        await _messageDao.updateStatus(id, 1);
+        Logger.print('ChatLogic — message sent: $id');
       } else {
         // 发送失败
-        await _messageDao.updateStatus(msgId, convId, 2);
-        Logger.print('ChatLogic — message send failed: $msgId');
+        await _messageDao.updateStatus(id, 2);
+        Logger.print('ChatLogic — message send failed: $id');
       }
 
       return serverMsgId != null;
@@ -177,13 +179,11 @@ class ChatLogic extends GetxController {
         return false;
       }
 
-      final msgId = DateTime.now().millisecondsSinceEpoch.toString();
       final now = DateTime.now().millisecondsSinceEpoch;
       final toUid = targetUser?.uid ?? '';
 
-      // 先写入本地（状态：发送中）
-      await _messageDao.insertFromNotification(
-        msgId: msgId,
+      // 先写入本地（状态：发送中），获取自增 id
+      final id = await _messageDao.insertFromNotification(
         conversationId: convId,
         fromUid: currentUid,
         toUid: toUid,
@@ -193,19 +193,23 @@ class ChatLogic extends GetxController {
         createTime: now,
       );
 
+      // 更新会话的最后消息
+      await _db.conversationDao.updateLastMessage(convId: convId, content: '[图片]');
+
       // 发送图片消息到服务端
       final serverMsgId = await _imController.sendMessage(
         convId: convId,
         toUid: toUid,
         content: url,
         contentType: 1,
-        msgId: msgId,
+        msgId: id,
       );
 
       if (serverMsgId != null) {
-        await _messageDao.updateStatus(msgId, convId, 1);
+        await _messageDao.updateServerMsgId(id, serverMsgId);
+        await _messageDao.updateStatus(id, 1);
       } else {
-        await _messageDao.updateStatus(msgId, convId, 2);
+        await _messageDao.updateStatus(id, 2);
       }
 
       return serverMsgId != null;
@@ -219,18 +223,22 @@ class ChatLogic extends GetxController {
 
   /// 重发失败消息。
   Future<bool> resendMessage(Message msg) async {
-    await _messageDao.updateStatus(msg.msgId, convId, 0); // 回到发送中
+    await _messageDao.updateStatus(msg.id, 0); // 回到发送中
     final serverMsgId = await _imController.sendMessage(
       convId: convId,
       toUid: msg.toUid ?? '',
       content: msg.content ?? '',
       contentType: msg.contentType,
-      msgId: msg.msgId,
+      msgId: msg.id,
     );
     if (serverMsgId != null) {
-      await _messageDao.updateStatus(msg.msgId, convId, 1);
+      await _messageDao.updateServerMsgId(msg.id, serverMsgId);
+      await _messageDao.updateStatus(msg.id, 1);
+      // 更新会话的最后消息
+      final displayContent = msg.contentType == 1 ? '[图片]' : (msg.content ?? '');
+      await _db.conversationDao.updateLastMessage(convId: convId, content: displayContent);
     } else {
-      await _messageDao.updateStatus(msg.msgId, convId, 2);
+      await _messageDao.updateStatus(msg.id, 2);
     }
     return serverMsgId != null;
   }

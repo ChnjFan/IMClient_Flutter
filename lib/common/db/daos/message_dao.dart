@@ -12,8 +12,8 @@ class MessageDao extends DatabaseAccessor<AppDatabase>
     with _$MessageDaoMixin {
   MessageDao(super.db);
 
-  /// 插入一条消息。
-  Future<void> insert(MessagesCompanion data) =>
+  /// 插入一条消息，返回自增 id。
+  Future<int> insert(MessagesCompanion data) =>
       into(messages).insert(data, mode: InsertMode.insertOrReplace);
 
   /// 批量插入消息。
@@ -45,18 +45,18 @@ class MessageDao extends DatabaseAccessor<AppDatabase>
           .watch();
 
   /// 更新消息状态（如发送成功）。
-  Future<void> updateStatus(String msgId, String conversationId, int status) =>
-      (update(messages)
-        ..where((m) =>
-            m.msgId.equals(msgId) & m.conversationId.equals(conversationId)))
+  Future<void> updateStatus(int id, int status) =>
+      (update(messages)..where((m) => m.id.equals(id)))
           .write(MessagesCompanion(status: Value(status)));
 
+  /// 更新消息服务端 ID
+  Future<void> updateServerMsgId(int id, int serverMsgId) =>
+      (update(messages)..where((m) => m.id.equals(id)))
+          .write(MessagesCompanion(serverMsgId: Value(serverMsgId)));
+
   /// 删除单条消息。
-  Future<void> deleteOne(String msgId, String conversationId) =>
-      (delete(messages)
-        ..where((m) =>
-            m.msgId.equals(msgId) & m.conversationId.equals(conversationId)))
-          .go();
+  Future<void> deleteOne(int id) =>
+      (delete(messages)..where((m) => m.id.equals(id))).go();
 
   /// 清空会话消息。
   Future<void> deleteByConversation(String conversationId) =>
@@ -73,8 +73,8 @@ class MessageDao extends DatabaseAccessor<AppDatabase>
   Future<void> clear() => delete(messages).go();
 
   /// 收到新消息推送时插入一条消息（避免调用方直接构造 Drift companion）。
-  Future<void> insertFromNotification({
-    required String msgId,
+  /// 返回自增主键 id。
+  Future<int> insertFromNotification({
     required String conversationId,
     String? fromUid,
     String? toUid,
@@ -83,9 +83,8 @@ class MessageDao extends DatabaseAccessor<AppDatabase>
     int status = 0,
     required int createTime,
   }) async {
-    await insert(
+    return await insert(
       MessagesCompanion(
-        msgId: Value(msgId),
         conversationId: Value(conversationId),
         fromUid: Value(fromUid),
         toUid: Value(toUid),
@@ -102,7 +101,7 @@ class MessageDao extends DatabaseAccessor<AppDatabase>
     if (list.isEmpty) return;
     final companions = list.map((map) {
       return MessagesCompanion(
-        msgId: Value(map['msg_id']?.toString() ?? ''),
+        serverMsgId: Value(map['msg_id'] is int ? map['msg_id'] as int : int.tryParse(map['msg_id']?.toString() ?? '')),
         conversationId: Value(map['conv_id']?.toString() ?? ''),
         fromUid: Value(map['from_uid'] as String?),
         toUid: Value(map['to_uid'] as String?),
@@ -115,14 +114,14 @@ class MessageDao extends DatabaseAccessor<AppDatabase>
     await insertAll(companions);
   }
 
-  /// 获取指定会话中最大的 createTime，用于增量同步去重。
-  Future<int> getMaxCreateTime(String conversationId) async {
+  /// 获取指定会话中最大的 msgID, 用于增量同步消息
+  Future<int> getMaxServerMsgId(String conversationId) async {
     final query = selectOnly(messages)
-      ..addColumns([messages.createTime])
+      ..addColumns([messages.serverMsgId])
       ..where(messages.conversationId.equals(conversationId))
-      ..orderBy([OrderingTerm(expression: messages.createTime, mode: OrderingMode.desc)])
+      ..orderBy([OrderingTerm(expression: messages.serverMsgId, mode: OrderingMode.desc)])
       ..limit(1);
     final row = await query.getSingleOrNull();
-    return row?.read(messages.createTime) ?? 0;
+    return row?.read(messages.serverMsgId) ?? 0;
   }
 }

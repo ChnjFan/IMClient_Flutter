@@ -59,6 +59,8 @@ class Conversations extends Table {
   IntColumn get lastMsgTime => integer().named('last_time').nullable()();
   IntColumn get unreadCount =>
       integer().named('unread_count').withDefault(const Constant(0))();
+  IntColumn get isMute =>
+      integer().named('is_mute').withDefault(const Constant(0))(); // 0=正常, 1=免打扰
   IntColumn get createTime => integer().named('create_time')();
   IntColumn get updateTime => integer().named('update_time')();
 
@@ -68,9 +70,10 @@ class Conversations extends Table {
 
 /// 消息缓存表
 ///
-/// 按会话缓存最近消息，支持分页加载。联合主键 (msgId, conversationId)。
+/// 按会话缓存最近消息，支持分页加载。主键 id 自增。
 class Messages extends Table {
-  TextColumn get msgId => text().named('msg_id')();
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get serverMsgId => integer().named('server_msg_id').nullable()();
   TextColumn get conversationId => text().named('conv_id')();
   TextColumn get fromUid => text().named('from_uid').nullable()();
   TextColumn get toUid => text().named('to_uid').nullable()();
@@ -80,9 +83,6 @@ class Messages extends Table {
   IntColumn get status =>
       integer().withDefault(const Constant(0))(); // 0=发送中, 1=已发送, 2=失败
   IntColumn get createTime => integer().named('create_time')();
-
-  @override
-  Set<Column> get primaryKey => {msgId, conversationId};
 }
 
 /// 好友列表表

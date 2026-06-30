@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import '../database.dart';
 import '../tables.dart';
+import '../../utils/time_utils.dart';
 
 part 'conversation_dao.g.dart';
 
@@ -24,23 +25,57 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
-  /// 从服务端原始数据批量同步会话列表。
+  /// 从服务端原始数据批量同步会话列表（全量覆盖）。
   Future<void> syncFromServerMaps(List<Map<String, dynamic>> list) async {
+    final companions = _mapsToCompanions(list);
+    await syncFromServer(companions);
+  }
+
+  /// 从服务端原始数据增量更新会话列表（upsert，不清表）。
+  ///
+  /// 用于 [sinceUpdateTime] > 0 的增量拉取场景，避免覆盖本地
+  /// 尚未同步到服务端的最新状态（如刚发送消息更新的 lastMsg）。
+  Future<void> upsertFromServerMaps(List<Map<String, dynamic>> list) async {
+    if (list.isEmpty) return;
+    final companions = _mapsToCompanions(list);
+    await batch((batch) {
+      batch.insertAll(conversations, companions,
+          mode: InsertMode.insertOrReplace);
+    });
+  }
+
+  /// 将服务端原始 Map 列表转为 Drift companion 列表。
+  List<ConversationsCompanion> _mapsToCompanions(List<Map<String, dynamic>> list) {
     final now = DateTime.now().millisecondsSinceEpoch;
-    final companions = list.map((map) {
+    return list.map((map) {
       return ConversationsCompanion(
         conversationId: Value(map['conv_id']?.toString() ?? ''),
-        type: Value(map['type'] as int? ?? 0),
+        type: Value(map['conv_type'] as int? ?? 0),
         title: Value(map['title'] as String?),
-        avatarUrl: Value(map['avatar_url'] as String?),
-        lastMsg: Value(map['last_msg'] as String?),
-        lastMsgTime: Value(map['last_time'] as int?),
+        avatarUrl: Value(map['avatar_url']?.toString() ?? ''),
+        lastMsg: Value(map['last_msg_content'] as String?),
+        lastMsgTime: Value(TimeUtils.parseServerTime(map['last_time']?.toString())),
         unreadCount: Value(map['unread_count'] as int? ?? 0),
-        createTime: Value(map['create_time'] as int? ?? now),
-        updateTime: Value(map['update_time'] as int? ?? now),
+        isMute: Value(map['is_mute'] as int? ?? 0),
+        createTime: Value(TimeUtils.parseServerTime(map['create_time']?.toString()) ?? now),
+        updateTime: Value(TimeUtils.parseServerTime(map['update_time']?.toString()) ?? now),
       );
     }).toList();
-    await syncFromServer(companions);
+  }
+
+  /// 获取本地所有会话中最大的 updateTime，用于增量同步。
+  ///
+  /// 表空时返回 0。
+  Future<int> getMaxUpdateTime() async {
+    final query = selectOnly(conversations)
+      ..addColumns([conversations.updateTime])
+      ..orderBy([
+        OrderingTerm(
+            expression: conversations.updateTime, mode: OrderingMode.desc)
+      ])
+      ..limit(1);
+    final row = await query.getSingleOrNull();
+    return row?.read(conversations.updateTime) ?? 0;
   }
 
   /// 监听会话列表（按最后消息时间倒序）。
@@ -70,10 +105,11 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
         title: Value(titleOverride ?? data['title'] as String?),
         avatarUrl: Value(data['avatar_url'] as String?),
         lastMsg: Value(data['last_msg_content'] as String?),
-        lastMsgTime: Value(data['last_time'] is int ? data['last_time'] as int? : null),
+        lastMsgTime: Value(TimeUtils.parseServerTime(data['last_time']?.toString())),
         unreadCount: const Value(0),
-        createTime: Value(data['create_time'] is int ? data['create_time'] as int : now),
-        updateTime: Value(now),
+        isMute: Value(data['is_mute'] as int? ?? 0),
+        createTime: Value(TimeUtils.parseServerTime(data['create_time']?.toString()) ?? now),
+        updateTime: Value(TimeUtils.parseServerTime(data['update_time']?.toString()) ?? now),
       ),
     );
   }
@@ -128,6 +164,47 @@ class ConversationDao extends DatabaseAccessor<AppDatabase>
           lastMsg: Value(content),
           lastMsgTime: Value(now),
           unreadCount: const Value(1),
+          createTime: Value(now),
+          updateTime: Value(now),
+        ),
+      );
+    }
+  }
+
+  /// 发送消息后更新会话的最后消息和最后消息时间。
+  ///
+  /// 仅更新 lastMsg、lastMsgTime，不修改未读计数。
+  /// 如果会话不存在（极少见，比如服务端创建了会话但本地尚未同步），则新建一条。
+  Future<void> updateLastMessage({
+    required String convId,
+    required String content,
+  }) async {
+    final existing = await getById(convId);
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    if (existing != null) {
+      await upsert(
+        ConversationsCompanion(
+          conversationId: Value(convId),
+          lastMsg: Value(content),
+          lastMsgTime: Value(now),
+          unreadCount: Value(existing.unreadCount),
+          type: Value(existing.type),
+          title: Value(existing.title),
+          avatarUrl: Value(existing.avatarUrl),
+          createTime: Value(existing.createTime),
+          updateTime: Value(now),
+        ),
+      );
+    } else {
+      // 兜底：会话尚不存在时创建一条最小记录
+      await upsert(
+        ConversationsCompanion(
+          conversationId: Value(convId),
+          type: const Value(0),
+          lastMsg: Value(content),
+          lastMsgTime: Value(now),
+          unreadCount: const Value(0),
           createTime: Value(now),
           updateTime: Value(now),
         ),
