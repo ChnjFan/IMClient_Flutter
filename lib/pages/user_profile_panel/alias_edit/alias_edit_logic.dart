@@ -1,8 +1,8 @@
 import 'package:imclient_flutter/component/toast.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../../common/db/database.dart';
-import '../../../../core/controller/im_controller.dart';
+import '../../../common/db/database.dart';
+import '../../../core/controller/im_controller.dart';
 
 class AliasEditLogic extends GetxController {
   final IMController imLogic = Get.find<IMController>();

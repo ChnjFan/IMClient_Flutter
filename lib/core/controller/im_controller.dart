@@ -415,11 +415,16 @@ class IMController extends GetxController {
     final convId = resp.get<String>('conv_id');
     Logger.print('IMController — conversation created: $convId');
 
-    // 将服务端返回的会话信息保存到本地数据库
+    // 仅当本地不存在该会话时才写入，避免覆盖本地已更新的最后消息
     try {
       final db = Get.find<AppDatabase>();
-      await db.conversationDao.upsertFromCreateResponse(resp.data, titleOverride: title);
-      Logger.print('IMController — conversation saved to local db: $convId');
+      final existing = await db.conversationDao.getById(convId ?? '');
+      if (existing == null) {
+        await db.conversationDao.upsertFromCreateResponse(resp.data, titleOverride: title);
+        Logger.print('IMController — conversation saved to local db: $convId');
+      } else {
+        Logger.print('IMController — conversation already exists locally, skipping upsert: $convId');
+      }
     } catch (e) {
       Logger.print('IMController — failed to save conversation to local db: $e');
     }
@@ -458,7 +463,9 @@ class IMController extends GetxController {
   }
 
   /// 拉取会话历史消息。
-  Future<List<Map<String, dynamic>>> fetchHistoryMessages({
+  ///
+  /// 返回 `(list, hasMore)` —— [list] 为消息原始数据列表，[hasMore] 为 1 表示服务端仍有更多历史数据待拉取。
+  Future<({List<Map<String, dynamic>> list, int hasMore})> fetchHistoryMessages({
     required String convId,
     int limit = 20,
     int msgId = 0,
@@ -475,11 +482,34 @@ class IMController extends GetxController {
 
     if (resp == null || !resp.isSuccess) {
       Logger.print('IMController — fetchHistoryMessages failed: ${resp?.errCode}');
-      return [];
+      return (list: <Map<String, dynamic>>[], hasMore: 0);
     }
 
-    final list = resp.get<List<dynamic>>('data') ?? [];
-    return list.cast<Map<String, dynamic>>();
+    final list = (resp.get<List<dynamic>>('data') ?? []).cast<Map<String, dynamic>>();
+    final hasMore = resp.get<int>('has_more') ?? 0;
+    return (list: list, hasMore: hasMore);
+  }
+
+  /// 回复服务端已接收历史消息。
+  ///
+  /// [count] 接收到的消息个数，[lastMsgId] 接收到的最大服务端消息 ID。
+  void updateMessagesStatus({
+    required String convId,
+    required int count,
+    required int lastMsgId,
+    required int status,
+  }) {
+    _tcp.sendNotify(
+      MsgId.updateConvMessageStatusReq,
+      {
+        'uid': userInfo.value.uid,
+        'conv_id': convId,
+        'count': count,
+        'last_msg_id': lastMsgId,
+        'status': status,
+      },
+    );
+    Logger.print('IMController — update messages status: conv=$convId count=$count lastMsgId=$lastMsgId status=$status');
   }
 
   /// 上传文件，返回文件 URL。

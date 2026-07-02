@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:imclient_flutter/common/utils/time_utils.dart';
 import '../database.dart';
 import '../tables.dart';
 
@@ -100,6 +101,7 @@ class MessageDao extends DatabaseAccessor<AppDatabase>
   Future<void> insertFromHistoryMaps(List<Map<String, dynamic>> list) async {
     if (list.isEmpty) return;
     final companions = list.map((map) {
+      final status = map['status'] as int? ?? 1;
       return MessagesCompanion(
         serverMsgId: Value(map['msg_id'] is int ? map['msg_id'] as int : int.tryParse(map['msg_id']?.toString() ?? '')),
         conversationId: Value(map['conv_id']?.toString() ?? ''),
@@ -107,8 +109,8 @@ class MessageDao extends DatabaseAccessor<AppDatabase>
         toUid: Value(map['to_uid'] as String?),
         content: Value(map['content'] as String?),
         contentType: Value(map['content_type'] as int? ?? 0),
-        status: Value(map['status'] as int? ?? 1),
-        createTime: Value(map['create_time'] as int? ?? DateTime.now().millisecondsSinceEpoch),
+        status: Value(status == 0 ? 1 : status), // 历史消息默认已发送成功
+        createTime: Value(TimeUtils.parseServerTime(map['create_time']?.toString()) ?? DateTime.now().millisecondsSinceEpoch),
       );
     }).toList();
     await insertAll(companions);

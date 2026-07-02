@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../../common/styles/colors.dart';
-import '../../../../common/styles/text_styles.dart';
+import '../../../common/styles/colors.dart';
+import '../../../common/styles/text_styles.dart';
 import 'friend_setting_logic.dart';
 
 class FriendSettingPage extends StatelessWidget {

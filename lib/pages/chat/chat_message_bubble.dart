@@ -5,7 +5,7 @@ import '../../common/styles/colors.dart';
 
 /// 聊天消息气泡组件。
 ///
-/// 支持文本和图片两种类型，以及发送中/已发送/失败三种状态。
+/// 支持文本和图片两种类型，以及发送中/已发送/失败/已读等状态。
 class ChatMessageBubble extends StatelessWidget {
   final Message message;
   final bool isMine;
@@ -39,7 +39,7 @@ class ChatMessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isImage = message.contentType == 1;
-    final isFailed = message.status == 2;
+    final isFailed = message.status == 3;
     final isSending = message.status == 0;
 
     return Padding(
@@ -47,7 +47,7 @@ class ChatMessageBubble extends StatelessWidget {
       child: Row(
         mainAxisAlignment:
             isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 对方头像（左侧）
           if (!isMine) _buildAvatar(peerAvatarUrl, onTap: onPeerAvatarTap),
@@ -64,10 +64,10 @@ class ChatMessageBubble extends StatelessWidget {
               decoration: BoxDecoration(
                 color: _bubbleColor,
                 borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: Radius.circular(isMine ? 16 : 4),
-                  bottomRight: Radius.circular(isMine ? 4 : 16),
+                  topLeft: Radius.circular(isMine ? 16 : 4),
+                  topRight: Radius.circular(isMine ? 4 : 16),
+                  bottomLeft: const Radius.circular(16),
+                  bottomRight: const Radius.circular(16),
                 ),
                 boxShadow: [
                   BoxShadow(

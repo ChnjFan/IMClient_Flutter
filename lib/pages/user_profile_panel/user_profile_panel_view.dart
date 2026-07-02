@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../../routes/app_navigator.dart';
-import '../../../common/models/user/user_full_info.dart';
-import '../../../common/styles/colors.dart';
-import '../../../common/styles/text_styles.dart';
+import '../../../routes/app_navigator.dart';
+import '../../common/models/user/user_full_info.dart';
+import '../../common/styles/colors.dart';
+import '../../common/styles/text_styles.dart';
 import 'user_profile_panel_logic.dart';
 
 class UserProfilePanelPage extends StatelessWidget {

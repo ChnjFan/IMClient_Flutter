@@ -53,6 +53,8 @@ class MsgId {
   static const int chatConvHistoryMsgRsp = 4004;
   static const int getConversationListReq = 4005;
   static const int getConversationListRsp = 4006;
+  static const int updateConvMessageStatusReq = 4007;
+  static const int updateConvMessageStatusRsp = 4008;
 
   // ---- 系统消息 ----
   static const int offline = 5001;

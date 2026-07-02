@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../../common/styles/colors.dart';
-import '../../../../common/widgets/touch_close_soft_keyboard.dart';
+import '../../../common/styles/colors.dart';
+import '../../../common/widgets/touch_close_soft_keyboard.dart';
 import 'alias_edit_logic.dart';
 
 class AliasEditPage extends StatelessWidget {

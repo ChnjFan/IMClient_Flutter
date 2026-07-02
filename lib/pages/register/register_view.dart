@@ -15,13 +15,18 @@ class RegisterPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      child: TouchCloseSoftKeyboard(
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('注册'),
+      ),
+      body: TouchCloseSoftKeyboard(
         isGradientBg: true,
         child: SingleChildScrollView(
           child: Column(
             children: [
-              const SizedBox(height: 88),
+              const SizedBox(height: 24),
               // Register background illustration
               SvgPicture.asset(
                 AppImages.registerBackground,

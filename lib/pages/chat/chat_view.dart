@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:imclient_flutter/common/res/strings.dart';
 import 'package:imclient_flutter/common/styles/text_styles.dart';
+import '../../common/db/database.dart';
 import '../../common/styles/colors.dart';
 import '../../core/controller/im_controller.dart';
 import '../../routes/app_navigator.dart';
@@ -19,24 +20,29 @@ class ChatPage extends StatelessWidget {
     final logic = Get.find<ChatLogic>();
     final targetUser = logic.targetUser;
 
-    return Scaffold(
-      backgroundColor: AppColors.c_F0F2F6,
-      appBar: AppBar(
-        title: GestureDetector(
-          onTap: () {
-            // TODO: 跳转到用户资料页
-          },
-          child: Text(
-            targetUser?.getShowName() ?? '聊天',
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: AppColors.c_0C1C33,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) AppNavigator.startMain();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.c_F0F2F6,
+        appBar: AppBar(
+          title: GestureDetector(
+            onTap: () {
+              // TODO: 跳转到用户资料页
+            },
+            child: Text(
+              targetUser?.getShowName() ?? '聊天',
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: AppColors.c_0C1C33,
+              ),
             ),
           ),
+          centerTitle: true,
         ),
-        centerTitle: true,
-      ),
       body: Column(
         children: [
           // 消息列表
@@ -47,6 +53,7 @@ class ChatPage extends StatelessWidget {
           ChatInputBar(logic: logic),
         ],
       ),
+      ),  // PopScope
     );
   }
 
@@ -65,7 +72,7 @@ class ChatPage extends StatelessWidget {
         );
       }
 
-      if (logic.messages.isEmpty) {
+      if (logic.displayItems.isEmpty) {
         return Align(
           alignment: Alignment.topCenter,
           child: Padding(
@@ -99,27 +106,39 @@ class ChatPage extends StatelessWidget {
 
       return ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 12),
-        itemCount: logic.messages.length,
+        itemCount: logic.displayItems.length,
         itemBuilder: (context, index) {
-          final msg = logic.messages[index];
+          final item = logic.displayItems[index];
+          if (item is String) {
+            return _buildTimeSeparator(item);
+          }
+          final msg = item as Message;
           final isMine = msg.fromUid == logic.currentUid;
           return ChatMessageBubble(
             message: msg,
             isMine: isMine,
             myAvatarUrl: myAvatarUrl,
             peerAvatarUrl: peerAvatarUrl,
-            onResend: msg.status == 2 ? () => logic.resendMessage(msg) : null,
+            onResend: msg.status == 3 ? () => logic.resendMessage(msg) : null,
             onImageTap: msg.contentType == 1
                 ? () => _previewImage(context, msg.content ?? '')
                 : null,
             onMyAvatarTap: () => AppNavigator.startUserDetail(),
-            onPeerAvatarTap: logic.targetUser != null
-                ? () => AppNavigator.startUserProfilePanel(userInfo: logic.targetUser)
-                : null,
+            onPeerAvatarTap: () => logic.onPeerAvatarTap(),
           );
         },
       );
     });
+  }
+
+  /// 消息间隔超过 10 分钟时显示的时间分隔符。
+  Widget _buildTimeSeparator(String label) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(label, style: AppTextStyles.ts_8E9AB0_12sp),
+      ),
+    );
   }
 
   void _previewImage(BuildContext context, String imageUrl) {

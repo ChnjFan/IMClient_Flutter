@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
-import '../../../../component/toast.dart';
+import '../../../component/toast.dart';
 import '../user_profile_panel_logic.dart';
 
 class FriendSettingLogic extends GetxController {
